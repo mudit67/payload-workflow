@@ -1,0 +1,13 @@
+services:
+  plcms:
+    build: ./
+    image: plcms
+    container_name: plcms-con
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    # command: tail -F README.md
+
