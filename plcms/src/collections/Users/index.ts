@@ -21,6 +21,11 @@ export const Users: CollectionConfig = {
       name: 'name',
       type: 'text',
     },
+    {
+      name: 'role',
+      type: 'select',
+      options: ['admin', 'staff', 'user'],
+    },
   ],
   timestamps: true,
 }

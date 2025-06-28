@@ -18,6 +18,8 @@ import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
 import { Check } from './collections/check'
 import { Workflows } from './collections/workflows'
+import { WorkflowStatus } from './collections/workflowStatus'
+import { authenticated } from './access/authenticated'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -66,7 +68,7 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI || '',
     },
   }),
-  collections: [Pages, Posts, Media, Categories, Users, Check, Workflows],
+  collections: [Pages, Posts, Media, Categories, Users, Check, Workflows, WorkflowStatus],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],
   plugins: [
@@ -82,7 +84,8 @@ export default buildConfig({
     access: {
       run: ({ req }: { req: PayloadRequest }): boolean => {
         // Allow logged in users to execute this endpoint (default)
-        if (req.user) return true
+        if(req.user) return true
+        // return authenticated({ req })
 
         // If there is no logged in user, then check
         // for the Vercel Cron secret to be present as an

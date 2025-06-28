@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-// import { authenticated } from '../../access/authenticated'
+// import { authentigcated } from '../../access/authenticated'
 
 export const Workflows: CollectionConfig = {
   slug: 'workflows',
@@ -11,6 +11,7 @@ export const Workflows: CollectionConfig = {
     },
     {
       name: 'collection_name',
+      unique: true,
       type: 'text',
     },
     {

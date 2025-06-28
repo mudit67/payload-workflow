@@ -75,6 +75,7 @@ export interface Config {
     users: User;
     check: Check;
     workflows: Workflow;
+    workflowStatus: WorkflowStatus;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -93,6 +94,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     check: CheckSelect<false> | CheckSelect<true>;
     workflows: WorkflowsSelect<false> | WorkflowsSelect<true>;
+    workflowStatus: WorkflowStatusSelect<false> | WorkflowStatusSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -401,6 +403,7 @@ export interface Category {
 export interface User {
   id: number;
   name?: string | null;
+  role?: ('admin' | 'staff' | 'user') | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -806,6 +809,17 @@ export interface Workflow {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workflowStatus".
+ */
+export interface WorkflowStatus {
+  id: number;
+  workflow_id?: (number | null) | Workflow;
+  current_step?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1004,6 +1018,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'workflows';
         value: number | Workflow;
+      } | null)
+    | ({
+        relationTo: 'workflowStatus';
+        value: number | WorkflowStatus;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -1362,6 +1380,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1416,6 +1435,16 @@ export interface WorkflowsSelect<T extends boolean = true> {
         type?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workflowStatus_select".
+ */
+export interface WorkflowStatusSelect<T extends boolean = true> {
+  workflow_id?: T;
+  current_step?: T;
   updatedAt?: T;
   createdAt?: T;
 }
