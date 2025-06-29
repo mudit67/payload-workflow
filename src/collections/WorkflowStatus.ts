@@ -1,8 +1,8 @@
 import { authenticated, isAdmin, isStaff } from '@/authentication/isAuth'
 import type { CollectionConfig } from 'payload'
 
-export const Media: CollectionConfig = {
-  slug: 'media',
+export const WorkflowStatus: CollectionConfig = {
+  slug: 'workflowStatus',
   access: {
     admin: isAdmin,
     read: authenticated,
@@ -13,10 +13,15 @@ export const Media: CollectionConfig = {
   },
   fields: [
     {
-      name: 'alt',
+      name: 'workflow_id',
+      type: 'relationship',
+      relationTo: 'workflows',
+      unique: true,
+    },
+    {
+      name: 'current_step',
       type: 'text',
-      required: true,
     },
   ],
-  upload: true,
+  timestamps: true,
 }
