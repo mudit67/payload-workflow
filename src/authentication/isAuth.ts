@@ -15,9 +15,13 @@ export const isStaff: isAuthenticated = ({ req: { user } }) => {
 }
 export const isAdmin: isAuthenticated = ({ req: { user } }) => {
   if (!!user) {
-    console.log(user.name, user.role)
+    // console.log(user.name, user.role)
 
     return user.role == 'admin'
   }
   return false
+}
+
+export const isAnyone = () => {
+  return true
 }

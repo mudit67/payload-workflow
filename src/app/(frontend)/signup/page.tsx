@@ -7,6 +7,7 @@ import Link from 'next/link'
 export default function SignupPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -26,9 +27,9 @@ export default function SignupPage() {
       return
     }
 
-    // Validate password strength
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long')
+    // Validate name is provided
+    if (!formData.name.trim()) {
+      setError('Name is required')
       setLoading(false)
       return
     }
@@ -40,8 +41,10 @@ export default function SignupPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          name: formData.name.trim(),
           email: formData.email,
           password: formData.password,
+          role: 'user', // Default role for new signups
         }),
         credentials: 'include',
       })
@@ -70,7 +73,7 @@ export default function SignupPage() {
 
       if (loginResponse.ok) {
         router.refresh()
-        router.replace('/workflow')
+        router.replace('/')
       } else {
         router.replace('/login')
       }
@@ -112,6 +115,22 @@ export default function SignupPage() {
 
           <div className="space-y-4">
             <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                Full Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={handleInputChange}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Enter your full name"
+              />
+            </div>
+
+            <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
               </label>
@@ -139,7 +158,7 @@ export default function SignupPage() {
                 value={formData.password}
                 onChange={handleInputChange}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Enter your password"
+                placeholder="Enter your password (min. 6 characters)"
               />
             </div>
 
@@ -193,6 +212,17 @@ export default function SignupPage() {
                 'Create account'
               )}
             </button>
+          </div>
+
+          <div className="text-xs text-gray-500 text-center">
+            By creating an account, you agree to our{' '}
+            <Link href="/terms" className="text-indigo-600 hover:text-indigo-500">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="text-indigo-600 hover:text-indigo-500">
+              Privacy Policy
+            </Link>
           </div>
         </form>
       </div>

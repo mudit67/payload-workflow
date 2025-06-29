@@ -1,4 +1,4 @@
-import { authenticated, isAdmin, isStaff } from '@/authentication/isAuth'
+import { authenticated, isAdmin, isAnyone, isStaff } from '@/authentication/isAuth'
 import type { CollectionConfig } from 'payload'
 
 export const Users: CollectionConfig = {
@@ -8,6 +8,9 @@ export const Users: CollectionConfig = {
   },
   access: {
     admin: isStaff,
+    create: isAnyone,
+    update: isAdmin,
+    delete: isAdmin,
   },
   auth: true,
   fields: [

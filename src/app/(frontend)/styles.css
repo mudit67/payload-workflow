@@ -78,7 +78,7 @@ p {
 }
 
 a {
-  color: currentColor;
+  color: black;
 
   &:focus {
     opacity: 0.8;

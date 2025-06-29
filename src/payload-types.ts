@@ -216,6 +216,7 @@ export interface Workflow {
 export interface WorkflowStatus {
   id: number;
   workflow_id?: (number | null) | Workflow;
+  doc_id?: string | null;
   current_step?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -366,6 +367,7 @@ export interface WorkflowsSelect<T extends boolean = true> {
  */
 export interface WorkflowStatusSelect<T extends boolean = true> {
   workflow_id?: T;
+  doc_id?: T;
   current_step?: T;
   updatedAt?: T;
   createdAt?: T;

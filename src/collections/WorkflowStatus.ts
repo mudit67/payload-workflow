@@ -1,4 +1,5 @@
 import { authenticated, isAdmin, isStaff } from '@/authentication/isAuth'
+
 import type { CollectionConfig } from 'payload'
 
 export const WorkflowStatus: CollectionConfig = {
@@ -16,7 +17,10 @@ export const WorkflowStatus: CollectionConfig = {
       name: 'workflow_id',
       type: 'relationship',
       relationTo: 'workflows',
-      unique: true,
+    },
+    {
+      name: 'doc_id',
+      type: 'text',
     },
     {
       name: 'current_step',
