@@ -51,13 +51,6 @@ export default function PostCard({ post, userRole }: PostCardProps) {
               </p>
             )}
           </div>
-          <div className="flex-shrink-0">
-            {userRole === 'user' && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                Comment Only
-              </span>
-            )}
-          </div>
         </div>
 
         {/* Content Preview */}
@@ -79,7 +72,7 @@ export default function PostCard({ post, userRole }: PostCardProps) {
               href={`/posts/${post.id}`}
               className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {userRole === 'user' ? 'Comment' : 'View'}
+              View
             </Link>
             {(userRole === 'admin' || userRole === 'staff') && (
               <Link
