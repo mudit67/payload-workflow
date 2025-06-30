@@ -13,6 +13,7 @@ import { Posts } from './collections/Posts'
 import { Workflows } from './collections/Workflow'
 import { WorkflowStatus } from './collections/WorkflowStatus'
 import { Products } from './collections/Product'
+import { WorkflowLogs } from './collections/WorkflowLogs'
 // import { AssignedWorkflowSteps } from './components/admin/workflowStatus'
 
 const filename = fileURLToPath(import.meta.url)
@@ -28,7 +29,7 @@ export default buildConfig({
       beforeDashboard: ['./components/admin/workflowStepsStatus.tsx'],
     },
   },
-  collections: [Users, Media, Posts, Workflows, WorkflowStatus, Products],
+  collections: [Users, Media, Posts, Workflows, WorkflowStatus, WorkflowLogs, Products],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

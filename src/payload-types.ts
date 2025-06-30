@@ -72,6 +72,7 @@ export interface Config {
     posts: Post;
     workflows: Workflow;
     workflowStatus: WorkflowStatus;
+    workflowLogs: WorkflowLog;
     products: Product;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,6 +85,7 @@ export interface Config {
     posts: PostsSelect<false> | PostsSelect<true>;
     workflows: WorkflowsSelect<false> | WorkflowsSelect<true>;
     workflowStatus: WorkflowStatusSelect<false> | WorkflowStatusSelect<true>;
+    workflowLogs: WorkflowLogsSelect<false> | WorkflowLogsSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -252,6 +254,20 @@ export interface WorkflowStatus {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workflowLogs".
+ */
+export interface WorkflowLog {
+  id: number;
+  initiator?: (number | null) | User;
+  collectionAffected?: string | null;
+  documentAffected?: string | null;
+  prevStatus?: string | null;
+  curStatus?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "products".
  */
 export interface Product {
@@ -288,6 +304,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'workflowStatus';
         value: number | WorkflowStatus;
+      } | null)
+    | ({
+        relationTo: 'workflowLogs';
+        value: number | WorkflowLog;
       } | null)
     | ({
         relationTo: 'products';
@@ -419,6 +439,19 @@ export interface WorkflowStatusSelect<T extends boolean = true> {
   doc_id?: T;
   step_id?: T;
   step_status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workflowLogs_select".
+ */
+export interface WorkflowLogsSelect<T extends boolean = true> {
+  initiator?: T;
+  collectionAffected?: T;
+  documentAffected?: T;
+  prevStatus?: T;
+  curStatus?: T;
   updatedAt?: T;
   createdAt?: T;
 }

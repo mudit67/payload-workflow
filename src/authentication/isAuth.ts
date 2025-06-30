@@ -25,3 +25,7 @@ export const isAdmin: isAuthenticated = ({ req: { user } }) => {
 export const isAnyone = () => {
   return true
 }
+
+export const noOne = () => {
+  return false
+}
