@@ -198,7 +198,7 @@ export interface Post {
 export interface Workflow {
   id: number;
   name?: string | null;
-  collection_name?: string | null;
+  collection_name: string;
   steps?:
     | {
         step_name?: string | null;

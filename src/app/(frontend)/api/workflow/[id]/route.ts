@@ -5,31 +5,80 @@ import config from '@payload-config'
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const payload = await getPayload({ config })
-    const { id } = params
+    const { id } = await params
+    const token = request.cookies.get('payload-token')?.value
 
-    if (!id) {
-      return NextResponse.json({ error: 'Workflow ID is required' }, { status: 400 })
+    if (!token) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    // Delete the workflow
+    // Verify user permissions
+    let user
+    try {
+      const userResponse = await fetch(
+        `${process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/users/me`,
+        {
+          headers: {
+            Cookie: `payload-token=${token}`,
+          },
+        },
+      )
+
+      if (!userResponse.ok) {
+        return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
+      }
+
+      const userData = await userResponse.json()
+      user = userData.user
+    } catch (error) {
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+    }
+
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Only admins can delete workflows' }, { status: 403 })
+    }
+
+    // Get the workflow first to know which collection it was associated with
+    const workflow = await payload.findByID({
+      collection: 'workflows',
+      id,
+    })
+
+    if (!workflow) {
+      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 })
+    }
+
+    // Remove the hook from the target collection
+    await removeWorkflowHook(payload, workflow.collection_name, id)
+
+    // Delete the workflow document
     await payload.delete({
       collection: 'workflows',
       id,
     })
 
+    // Also clean up any workflow status records for this workflow
+    await payload.delete({
+      collection: 'workflowStatus',
+      where: {
+        workflow_id: { equals: id },
+      },
+    })
+
     return NextResponse.json(
-      { success: true, message: 'Workflow deleted successfully' },
+      {
+        success: true,
+        message: `Workflow "${workflow.name}" and associated hook deleted successfully`,
+      },
       { status: 200 },
     )
   } catch (error: any) {
     console.error('Error deleting workflow:', error)
 
-    // Handle not found errors
     if (error.status === 404) {
       return NextResponse.json({ error: 'Workflow not found' }, { status: 404 })
     }
 
-    // Handle access control errors
     if (error.message?.includes('access') || error.status === 403) {
       return NextResponse.json(
         { error: 'Insufficient permissions to delete workflow' },
@@ -38,5 +87,45 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     return NextResponse.json({ error: 'Failed to delete workflow' }, { status: 500 })
+  }
+}
+
+async function removeWorkflowHook(payload: any, collectionSlug: string, workflowId: string) {
+  try {
+    // Find the target collection
+    const targetCollection = payload.config.collections.find(
+      (col: any) => col.slug === collectionSlug,
+    )
+
+    if (!targetCollection) {
+      console.warn(`Collection ${collectionSlug} not found for hook removal`)
+      return
+    }
+
+    // Check if hooks exist
+    if (!targetCollection.hooks || !targetCollection.hooks.afterChange) {
+      console.warn(`No afterChange hooks found in collection ${collectionSlug}`)
+      return
+    }
+
+    // Filter out the specific workflow hook
+    const originalHookCount = targetCollection.hooks.afterChange.length
+    targetCollection.hooks.afterChange = targetCollection.hooks.afterChange.filter(
+      (hook: any) => hook.name !== `workflow-${workflowId}`,
+    )
+
+    const removedHooks = originalHookCount - targetCollection.hooks.afterChange.length
+
+    if (removedHooks > 0) {
+      console.log(
+        `Removed ${removedHooks} workflow hook(s) for workflow ${workflowId} from collection ${collectionSlug}`,
+      )
+    } else {
+      console.warn(
+        `No workflow hook found with name workflow-${workflowId} in collection ${collectionSlug}`,
+      )
+    }
+  } catch (error) {
+    console.error(`Error removing workflow hook for workflow ${workflowId}:`, error)
   }
 }

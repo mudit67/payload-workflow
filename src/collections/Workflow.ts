@@ -1,6 +1,11 @@
 import { isAdmin, isStaff } from '@/authentication/isAuth'
 import { registerWorkflowHook } from '@/lib/registerWorkflowHook'
-import type { CollectionBeforeReadHook, CollectionConfig } from 'payload'
+import type {
+  CollectionAfterDeleteHook,
+  CollectionBeforeDeleteHook,
+  CollectionBeforeReadHook,
+  CollectionConfig,
+} from 'payload'
 import type { CollectionAfterLoginHook } from 'payload'
 
 // import { authentigcated } from '../../access/authenticated'
@@ -28,6 +33,18 @@ export const bfReadHook: CollectionBeforeReadHook = async ({ collection, context
   })
 }
 
+export const bfDelHook: CollectionBeforeDeleteHook = async ({ req, id: wfId }) => {
+  // const wfId = doc.id
+  req.payload.delete({
+    collection: 'workflowStatus',
+    where: {
+      workflow_id: {
+        equals: wfId,
+      },
+    },
+  })
+}
+
 export const Workflows: CollectionConfig = {
   slug: 'workflows',
   access: {
@@ -48,6 +65,7 @@ export const Workflows: CollectionConfig = {
       name: 'collection_name',
       unique: true,
       type: 'text',
+      required: true,
     },
     {
       name: 'steps',
@@ -103,6 +121,7 @@ export const Workflows: CollectionConfig = {
   hooks: {
     afterLogin: [aftLoginHook],
     // beforeRead: [bfReadHook],
+    beforeDelete: [bfDelHook],
   },
   timestamps: true,
 }
