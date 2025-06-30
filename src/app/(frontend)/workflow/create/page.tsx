@@ -21,20 +21,35 @@ export default async function CreateWorkflowPage() {
   const payload = await getPayload({ config: configPromise })
 
   // Get collections server-side with their fields
-  const allCollections = payload.config.collections.map((collection) => ({
-    slug: collection.slug,
-    labels: collection.labels || { singular: collection.slug, plural: collection.slug },
-    fields: collection.fields
-      .map((field: any) => ({
-        name: field.name,
-        type: field.type,
-      }))
-      .filter((field: any) => field.name && field.name !== 'id'), // Filter out system fields
-  }))
+  const allCollections: Collection[] = payload.config.collections.map((collection) => {
+    const tempCol: Collection = {
+      slug: collection.slug,
+      labels: { singular: collection.slug, plural: collection.slug },
+      fields: collection.fields
+        .map((field: any) => ({
+          name: field.name,
+          type: field.type,
+        }))
+        .filter((field: any) => field.name && field.name !== 'id'),
+    }
+    return tempCol
+  })
+  //   ({
+  //   slug: collection.slug,
+  //   labels: collection.labels || { singular: collection.slug, plural: collection.slug },
+  //   fields: collection.fields
+  //     .map((field: any) => ({
+  //       name: field.name,
+  //       type: field.type,
+  //     }))
+  //     .filter((field: any) => field.name && field.name !== 'id'),
+  // }))
 
   // Filter out system collections
   const filteredCollections = allCollections.filter(
     (col: Collection) =>
+      col &&
+      col.slug &&
       ![
         'users',
         'workflows',

@@ -4,6 +4,7 @@ import type {
   CollectionBeforeDeleteHook,
   CollectionBeforeReadHook,
   CollectionConfig,
+  Where,
 } from 'payload'
 // import type { CollectionAfterLoginHook } from 'payload'
 
@@ -34,22 +35,24 @@ export const bfReadHook: CollectionBeforeReadHook = async ({ req }) => {
 
 export const bfDelHook: CollectionBeforeDeleteHook = async ({ req, id: wfId }) => {
   // const wfId = doc.id
+  const query: Where = {
+    or: [
+      {
+        workflow_id: {
+          equals: wfId || 0,
+        },
+      },
+      {
+        workflow_id: {
+          equals: 0,
+        },
+      },
+    ],
+  }
+  wfId = Number(wfId)
   req.payload.delete({
     collection: 'workflowStatus',
-    where: {
-      or: [
-        {
-          workflow_id: {
-            equals: wfId,
-          },
-        },
-        {
-          workflow_id: {
-            equal: 0,
-          },
-        },
-      ],
-    },
+    where: query,
   })
 }
 

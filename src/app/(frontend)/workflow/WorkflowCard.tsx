@@ -4,21 +4,22 @@ import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Workflow } from './page'
 
-interface WorkflowStep {
-  step_name: string
-  type: 'approval' | 'review' | 'sign-off' | 'comment-only'
-  id?: string
-}
+// interface WorkflowStep {
+//   step_name: string
+//   type: 'approval' | 'review' | 'sign-off' | 'comment-only'
+//   id?: string
+// }
 
-interface Workflow {
-  id: string
-  name: string
-  collection_name: string
-  steps: WorkflowStep[]
-  createdAt: string
-  updatedAt: string
-}
+// interface Workflow {
+//   id: string
+//   name: string
+//   collection_name: string
+//   steps: WorkflowStep[]
+//   createdAt: string
+//   updatedAt: string
+// }
 
 const stepTypeColors = {
   approval: 'bg-red-100 text-red-800',
@@ -82,6 +83,12 @@ export function WorkflowCard({ workflow }: { workflow: Workflow }) {
                 <div key={index} className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 truncate flex-1">
                     {index + 1}. {step.step_name}
+                    {step.assigned_to && (
+                      <span className="text-xs text-gray-500 ml-2">
+                        →{' '}
+                        {typeof step.assigned_to === 'object' ? step.assigned_to.email : 'Assigned'}
+                      </span>
+                    )}
                   </span>
                   <span
                     className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${stepTypeColors[step.type]}`}

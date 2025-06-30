@@ -6,16 +6,27 @@ import { CreateWorkflowButton } from './createWorkflowButton'
 interface WorkflowStep {
   step_name: string
   type: 'approval' | 'review' | 'sign-off' | 'comment-only'
+  assigned_to?: any // User relationship
+  field_name?: string
+  operator?: string
+  desiredValue?: string
   id?: string
 }
 
-interface Workflow {
+export interface Workflow {
   id: string
   name: string
   collection_name: string
   steps: WorkflowStep[]
   createdAt: string
   updatedAt: string
+}
+
+interface WorkflowStatusSummary {
+  totalStatuses: number
+  pendingStatuses: number
+  approvedStatuses: number
+  rejectedStatuses: number
 }
 
 export default async function WorkflowsPage() {
@@ -27,6 +38,9 @@ export default async function WorkflowsPage() {
       limit: 100,
       sort: '-createdAt',
     })
+
+    // Get workflow status summary
+    const workflowStatusSummary = await getWorkflowStatusSummary(payload)
 
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -42,8 +56,8 @@ export default async function WorkflowsPage() {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Enhanced Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -91,7 +105,7 @@ export default async function WorkflowsPage() {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                  <div className="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
                     <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path
                         fillRule="evenodd"
@@ -104,17 +118,34 @@ export default async function WorkflowsPage() {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">
-                      Avg Steps per Workflow
+                      Pending Approvals
                     </dt>
                     <dd className="text-lg font-medium text-gray-900">
-                      {workflows.docs.length > 0
-                        ? Math.round(
-                            workflows.docs.reduce(
-                              (acc: number, w: Workflow) => acc + w.steps.length,
-                              0,
-                            ) / workflows.docs.length,
-                          )
-                        : 0}
+                      {workflowStatusSummary.pendingStatuses}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Total Steps</dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {workflows.docs.reduce((acc: number, w: Workflow) => acc + w.steps.length, 0)}
                     </dd>
                   </dl>
                 </div>
@@ -145,6 +176,46 @@ export default async function WorkflowsPage() {
         </div>
       </div>
     )
+  }
+}
+
+async function getWorkflowStatusSummary(payload: any): Promise<WorkflowStatusSummary> {
+  try {
+    const allStatuses = await payload.find({
+      collection: 'workflowStatus',
+      limit: 0, // Get all
+    })
+
+    const summary = {
+      totalStatuses: allStatuses.totalDocs,
+      pendingStatuses: 0,
+      approvedStatuses: 0,
+      rejectedStatuses: 0,
+    }
+
+    allStatuses.docs.forEach((status: any) => {
+      switch (status.step_status) {
+        case 'pending':
+          summary.pendingStatuses++
+          break
+        case 'approved':
+          summary.approvedStatuses++
+          break
+        case 'rejected':
+          summary.rejectedStatuses++
+          break
+      }
+    })
+
+    return summary
+  } catch (error) {
+    console.error('Error fetching workflow status summary:', error)
+    return {
+      totalStatuses: 0,
+      pendingStatuses: 0,
+      approvedStatuses: 0,
+      rejectedStatuses: 0,
+    }
   }
 }
 
