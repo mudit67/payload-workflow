@@ -1,32 +1,40 @@
 import { isAdmin, isStaff } from '@/authentication/isAuth'
 import { registerWorkflowHook } from '@/lib/registerWorkflowHook'
+import { WorkflowEngine } from '@/lib/workflowEngine'
 import type {
+  CollectionAfterMeHook,
   CollectionBeforeDeleteHook,
+  CollectionBeforeLoginHook,
   CollectionBeforeReadHook,
   CollectionConfig,
   Where,
 } from 'payload'
-// import type { CollectionAfterLoginHook } from 'payload'
 
-// import { authentigcated } from '../../access/authenticated'
-
-// const aftLoginHook: CollectionAfterLoginHook = async ({ req }) => {
-//   console.log('After Login Hook Called')
-
-//   const registeredWorkflows = await req.payload.find({ collection: 'workflows' })
-//   registeredWorkflows.docs.map((wf) => {
-//     if (wf.collection_name) {
-//       registerWorkflowHook(req.payload, wf.collection_name, wf.id)
-//     }
-//   })
-// }
-
-export const bfReadHook: CollectionBeforeReadHook = async ({ req }) => {
+export const bfReadHook: CollectionBeforeLoginHook = async ({ req }) => {
   console.log('Before Read Hook Called')
   const registeredWorkflows = await req.payload.find({ collection: 'workflows' })
   console.log(registerWorkflowHook)
+  const workflowEngine = new WorkflowEngine(req.payload)
+  registeredWorkflows.docs.map(async (wf) => {
+    if (wf.collection_name) {
+      try {
+        await workflowEngine.processExistingDocuments(wf.collection_name, wf.id)
+        console.log(`Finished processing existing documents for workflow ${wf.id}`)
+      } catch (error) {
+        console.error('Error processing existing documents:', error)
+      }
 
-  registeredWorkflows.docs.map((wf) => {
+      registerWorkflowHook(req.payload, wf.collection_name, wf.id)
+    }
+  })
+}
+
+export const aftMe: CollectionAfterMeHook = async ({ req }) => {
+  console.log('After Me Hook Called')
+  const registeredWorkflows = await req.payload.find({ collection: 'workflows' })
+  console.log(registerWorkflowHook)
+  // const workflowEngine = new WorkflowEngine(req.payload)
+  registeredWorkflows.docs.map(async (wf) => {
     if (wf.collection_name) {
       registerWorkflowHook(req.payload, wf.collection_name, wf.id)
     }
@@ -133,6 +141,7 @@ export const Workflows: CollectionConfig = {
     // afterLogin: [aftLoginHook],
     // beforeRead: [bfReadHook],
     beforeDelete: [bfDelHook],
+    beforeLogin: [bfReadHook],
   },
   timestamps: true,
 }

@@ -1,5 +1,6 @@
 import { authenticated, isAdmin, isAnyone, isStaff } from '@/authentication/isAuth'
 import type { CollectionConfig } from 'payload'
+import { aftMe, bfReadHook } from './Workflow'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -31,4 +32,8 @@ export const Users: CollectionConfig = {
       },
     },
   ],
+  hooks: {
+    beforeLogin: [bfReadHook],
+    afterMe: [aftMe],
+  },
 }

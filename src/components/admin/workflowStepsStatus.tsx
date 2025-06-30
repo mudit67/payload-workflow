@@ -21,6 +21,7 @@ export default function AssignedWorkflowSteps() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updatingSteps, setUpdatingSteps] = useState<Set<string>>(new Set())
+  const [hideApproved, setHideApproved] = useState(false) // New state for toggle
 
   useEffect(() => {
     const fetchAssignedSteps = async () => {
@@ -50,6 +51,18 @@ export default function AssignedWorkflowSteps() {
 
     fetchAssignedSteps()
   }, [user])
+
+  // Filter steps based on hideApproved toggle
+  const filteredSteps = hideApproved
+    ? assignedSteps.filter((step) => step.step_status !== 'approved')
+    : assignedSteps
+
+  const toggleHideApproved = () => {
+    setHideApproved(!hideApproved)
+  }
+
+  // Count approved steps for display
+  const approvedCount = assignedSteps.filter((step) => step.step_status === 'approved').length
 
   const handleStepAction = async (stepId: string, action: 'approved' | 'rejected') => {
     setUpdatingSteps((prev) => new Set(prev).add(stepId))
@@ -196,18 +209,31 @@ export default function AssignedWorkflowSteps() {
     <div className="workflow-steps">
       <div className="workflow-steps__header">
         <h3 className="workflow-steps__title">
-          My Assigned Workflow Steps ({assignedSteps.length})
+          My Assigned Workflow Steps ({filteredSteps.length})
+          {hideApproved && approvedCount > 0 && (
+            <span className="workflow-steps__hidden-count">({approvedCount} approved hidden)</span>
+          )}
         </h3>
-        <button
-          onClick={refreshSteps}
-          disabled={loading}
-          className="btn btn--style-secondary btn--size-small"
-        >
-          🔄 Refresh
-        </button>
+        <div className="workflow-steps__header-actions">
+          {approvedCount > 0 && (
+            <button
+              onClick={toggleHideApproved}
+              className={`btn btn--size-small ${hideApproved ? 'btn--style-primary' : 'btn--style-secondary'}`}
+            >
+              {hideApproved ? 'Show Approved' : 'Hide Approved'}
+            </button>
+          )}
+          <button
+            onClick={refreshSteps}
+            disabled={loading}
+            className="btn btn--style-secondary btn--size-small"
+          >
+            🔄 Refresh
+          </button>
+        </div>
       </div>
 
-      {assignedSteps.length === 0 ? (
+      {filteredSteps.length === 0 ? (
         <div className="workflow-steps__empty">
           <div className="workflow-steps__empty-icon">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -219,11 +245,15 @@ export default function AssignedWorkflowSteps() {
               />
             </svg>
           </div>
-          <p className="workflow-steps__empty-text">No workflow steps assigned to you</p>
+          <p className="workflow-steps__empty-text">
+            {hideApproved && assignedSteps.length > 0
+              ? 'All steps are approved! Click "Show Approved" to view them.'
+              : 'No workflow steps assigned to you'}
+          </p>
         </div>
       ) : (
         <div className="workflow-steps__list">
-          {assignedSteps.map((step) => {
+          {filteredSteps.map((step) => {
             const isUpdating = updatingSteps.has(step.id)
 
             return (

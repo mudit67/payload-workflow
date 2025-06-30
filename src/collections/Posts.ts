@@ -32,7 +32,4 @@ export const Posts: CollectionConfig = {
       type: 'date',
     },
   ],
-  hooks: {
-    beforeRead: [bfReadHook],
-  },
 }
