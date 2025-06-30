@@ -32,7 +32,7 @@ body {
   line-height: 32px;
 
   margin: 0;
-  color: rgb(1000, 1000, 1000);
+  color: rgb(0, 0, 0);
 
   @media (max-width: 1024px) {
     font-size: 15px;
@@ -140,7 +140,7 @@ svg {
     }
 
     .docs {
-      color: rgb(1000, 1000, 1000);
+      color: rgb(0, 0, 0);
       background: rgb(0, 0, 0);
       border: 1px solid rgb(1000, 1000, 1000);
     }

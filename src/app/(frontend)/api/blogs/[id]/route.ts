@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { convertLexicalToPlaintext } from '@payloadcms/richtext-lexical/plaintext'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const payload = await getPayload({ config })
-    const { id } = params
+    const { id } = await params
     const token = request.cookies.get('payload-token')?.value
 
     if (!token) {
@@ -43,6 +44,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       })
     } catch (error) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+    }
+
+    if (post) {
+      console.log(post.content)
+      // convertLexicalToPlaintext({ data: post.content })
     }
 
     // Get workflow information for posts collection

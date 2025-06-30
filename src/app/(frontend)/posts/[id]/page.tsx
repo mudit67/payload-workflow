@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { RichText } from '@payloadcms/richtext-lexical/react'
 
 interface Post {
   id: string
@@ -137,49 +138,6 @@ export default function PostPage() {
     }
   }
 
-  const renderContent = (content: any) => {
-    if (!content) return <p className="text-gray-500">No content available.</p>
-
-    // Handle Lexical rich text format
-    if (typeof content === 'object' && content.root) {
-      const renderNode = (node: any): string => {
-        if (node.type === 'text') {
-          let text = node.text || ''
-          if (node.format & 1) text = `<strong>${text}</strong>` // Bold
-          if (node.format & 2) text = `<em>${text}</em>` // Italic
-          return text
-        }
-
-        if (node.type === 'paragraph') {
-          const children = node.children?.map(renderNode).join('') || ''
-          return `<p class="mb-4">${children}</p>`
-        }
-
-        if (node.type === 'heading') {
-          const children = node.children?.map(renderNode).join('') || ''
-          const level = node.tag || 'h2'
-          return `<${level} class="text-2xl font-bold mb-4 mt-6">${children}</${level}>`
-        }
-
-        if (node.children) {
-          return node.children.map(renderNode).join('')
-        }
-
-        return ''
-      }
-
-      const htmlContent = content.root.children?.map(renderNode).join('') || ''
-      return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
-    }
-
-    // Handle plain HTML string
-    if (typeof content === 'string') {
-      return <div dangerouslySetInnerHTML={{ __html: content }} />
-    }
-
-    return <p className="text-gray-500">Content format not supported.</p>
-  }
-
   const getStepTypeColor = (type: string) => {
     const colors = {
       approval: 'bg-red-100 text-red-800',
@@ -192,7 +150,7 @@ export default function PostPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center ">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading post...</p>
@@ -260,7 +218,7 @@ export default function PostPage() {
   const { post, user, workflow } = data
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ">
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -313,7 +271,14 @@ export default function PostPage() {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <article className="bg-white rounded-lg shadow-sm p-8">
-          <div className="prose prose-lg max-w-none">{renderContent(post.content)}</div>
+          {/* Rich Text Content */}
+          <div className="prose prose-lg max-w-none">
+            {post.content ? (
+              <RichText data={post.content} />
+            ) : (
+              <p className="text-gray-500">No content available.</p>
+            )}
+          </div>
 
           {/* Action Buttons */}
           <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">

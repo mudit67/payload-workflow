@@ -64,7 +64,15 @@ export default function CreateWorkflowClient({ collections }: Props) {
   })
 
   // Supported field types for workflow conditions
-  const supportedFieldTypes = ['text', 'textarea', 'email', 'number', 'checkbox', 'date']
+  const supportedFieldTypes = [
+    'text',
+    'textarea',
+    'email',
+    'number',
+    'checkbox',
+    'date',
+    'richText',
+  ]
 
   // Get the selected collection's supported fields
   const selectedCollection = collections.find((col) => col.slug === formData.collection_name)
@@ -265,6 +273,7 @@ export default function CreateWorkflowClient({ collections }: Props) {
       case 'text':
       case 'textarea':
       case 'email':
+      case 'richText': // Add richText support
         return [
           { label: 'Text Length Equals', value: 'text:length:equals' },
           { label: 'Text Length >=', value: 'text:length:greaterThanEqualsTo' },
@@ -294,7 +303,10 @@ export default function CreateWorkflowClient({ collections }: Props) {
           { label: 'Date <', value: 'date:lessThan' },
         ]
       default:
-        return []
+        return [
+          { label: 'Text Contains', value: 'text:contains' },
+          { label: 'Text Equals', value: 'text:length:equals' },
+        ]
     }
   }
 

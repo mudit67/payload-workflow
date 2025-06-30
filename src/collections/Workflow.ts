@@ -1,27 +1,26 @@
 import { isAdmin, isStaff } from '@/authentication/isAuth'
 import { registerWorkflowHook } from '@/lib/registerWorkflowHook'
 import type {
-  CollectionAfterDeleteHook,
   CollectionBeforeDeleteHook,
   CollectionBeforeReadHook,
   CollectionConfig,
 } from 'payload'
-import type { CollectionAfterLoginHook } from 'payload'
+// import type { CollectionAfterLoginHook } from 'payload'
 
 // import { authentigcated } from '../../access/authenticated'
 
-const aftLoginHook: CollectionAfterLoginHook = async ({ collection, context, req }) => {
-  console.log('After Login Hook Called')
+// const aftLoginHook: CollectionAfterLoginHook = async ({ req }) => {
+//   console.log('After Login Hook Called')
 
-  const registeredWorkflows = await req.payload.find({ collection: 'workflows' })
-  registeredWorkflows.docs.map((wf) => {
-    if (wf.collection_name) {
-      registerWorkflowHook(req.payload, wf.collection_name, wf.id)
-    }
-  })
-}
+//   const registeredWorkflows = await req.payload.find({ collection: 'workflows' })
+//   registeredWorkflows.docs.map((wf) => {
+//     if (wf.collection_name) {
+//       registerWorkflowHook(req.payload, wf.collection_name, wf.id)
+//     }
+//   })
+// }
 
-export const bfReadHook: CollectionBeforeReadHook = async ({ collection, context, req }) => {
+export const bfReadHook: CollectionBeforeReadHook = async ({ req }) => {
   console.log('Before Read Hook Called')
   const registeredWorkflows = await req.payload.find({ collection: 'workflows' })
   console.log(registerWorkflowHook)
@@ -38,9 +37,18 @@ export const bfDelHook: CollectionBeforeDeleteHook = async ({ req, id: wfId }) =
   req.payload.delete({
     collection: 'workflowStatus',
     where: {
-      workflow_id: {
-        equals: wfId,
-      },
+      or: [
+        {
+          workflow_id: {
+            equals: wfId,
+          },
+        },
+        {
+          workflow_id: {
+            equal: 0,
+          },
+        },
+      ],
     },
   })
 }
@@ -119,7 +127,7 @@ export const Workflows: CollectionConfig = {
     },
   ],
   hooks: {
-    afterLogin: [aftLoginHook],
+    // afterLogin: [aftLoginHook],
     // beforeRead: [bfReadHook],
     beforeDelete: [bfDelHook],
   },

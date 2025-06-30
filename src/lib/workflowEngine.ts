@@ -40,7 +40,7 @@ export class WorkflowEngine {
 
       console.log(`Processing workflow for document ${documentId} in collection ${collectionSlug}`)
 
-      console.log('Workflow Steps:', workflow.steps)
+      // console.log('Workflow Steps:', workflow.steps)
 
       // Process each step in the workflow
       for (let stepIndex = 0; stepIndex < workflow.steps.length; stepIndex++) {
@@ -49,7 +49,7 @@ export class WorkflowEngine {
         // Check if step conditions are met (if any)
         const conditionsMet = await this.evaluateStepConditions(step, documentData)
 
-        console.log(50, conditionsMet, documentData)
+        // console.log(50, conditionsMet, documentData)
 
         // if (conditionsMet) {
         // Create or update workflow status for this step
@@ -61,71 +61,200 @@ export class WorkflowEngine {
     }
   }
 
+  // Add this helper function to extract text from rich text content
+  private extractTextFromRichText(richTextData: any): string {
+    if (!richTextData) return ''
+
+    // Handle Lexical rich text format
+    if (typeof richTextData === 'object' && richTextData.root) {
+      return this.extractTextFromLexical(richTextData.root)
+    }
+
+    // Handle other rich text formats or plain text
+    if (typeof richTextData === 'string') {
+      // Remove HTML tags if it's HTML string
+      return richTextData.replace(/<[^>]*>/g, '').trim()
+    }
+
+    // Handle array format (some rich text editors use arrays)
+    if (Array.isArray(richTextData)) {
+      return richTextData
+        .map((item) => {
+          if (typeof item === 'string') return item
+          if (item.text) return item.text
+          if (item.children) return this.extractTextFromRichText(item.children)
+          return ''
+        })
+        .join(' ')
+        .trim()
+    }
+
+    return ''
+  }
+
+  private extractTextFromLexical(node: any): string {
+    if (!node) return ''
+
+    let text = ''
+
+    // Handle text nodes
+    if (node.type === 'text') {
+      return node.text || ''
+    }
+
+    // Handle nodes with children
+    if (node.children && Array.isArray(node.children)) {
+      text = node.children.map((child: any) => this.extractTextFromLexical(child)).join('')
+    }
+
+    // Add spacing for block elements
+    if (node.type === 'paragraph' || node.type === 'heading') {
+      text += ' '
+    }
+
+    return text
+  }
+
+  // Update the getFieldValue method to handle rich text
+  private getFieldValue(data: any, fieldPath: string): any {
+    const value = fieldPath.split('.').reduce((obj, key) => obj?.[key], data)
+
+    // Check if this might be a rich text field by examining the structure
+    if (value && typeof value === 'object' && (value.root || Array.isArray(value))) {
+      // This looks like rich text content, extract the text
+      return this.extractTextFromRichText(value)
+    }
+
+    return value
+  }
+
+  // Update the evaluateCondition method to handle rich text properly
+  private evaluateCondition(fieldValue: any, operator: string, desiredValue: string): boolean {
+    // Convert rich text to plain text if needed
+    let textValue = fieldValue
+    if (typeof fieldValue === 'object' && fieldValue !== null) {
+      textValue = this.extractTextFromRichText(fieldValue)
+    }
+
+    console.log('Text Value: ', textValue)
+    console.log('operator ', operator)
+
+    switch (operator) {
+      case 'text:length:equals':
+        return String(textValue || '').length === parseInt(desiredValue)
+      case 'text:length:greaterThanEqualsTo':
+        return String(textValue || '').length >= parseInt(desiredValue)
+      case 'text:length:lessThanEqualsTo':
+        return String(textValue || '').length <= parseInt(desiredValue)
+      case 'text:length:greaterThan':
+        return String(textValue || '').length > parseInt(desiredValue)
+      case 'text:length:lessThan':
+        return String(textValue || '').length < parseInt(desiredValue)
+      case 'text:startsWith':
+        return String(textValue || '')
+          .toLowerCase()
+          .startsWith(desiredValue.toLowerCase())
+      case 'text:endsWith':
+        return String(textValue || '')
+          .toLowerCase()
+          .endsWith(desiredValue.toLowerCase())
+      case 'text:contains':
+        return String(textValue || '')
+          .toLowerCase()
+          .includes(desiredValue.toLowerCase())
+      case 'number:equals':
+        return Number(textValue) === Number(desiredValue)
+      case 'number:greaterThanEqualsTo':
+        return Number(textValue) >= Number(desiredValue)
+      case 'number:lessThanEqualsTo':
+        return Number(textValue) <= Number(desiredValue)
+      case 'number:greaterThan':
+        return Number(textValue) > Number(desiredValue)
+      case 'number:lessThan':
+        return Number(textValue) < Number(desiredValue)
+      case 'checkBox:equals':
+        return Boolean(textValue) === (desiredValue.toLowerCase() === 'true')
+      case 'date:equals':
+        return new Date(textValue).getTime() === new Date(desiredValue).getTime()
+      case 'date:greaterThanEqualsTo':
+        return new Date(textValue) >= new Date(desiredValue)
+      case 'date:lessThanEqualsTo':
+        return new Date(textValue) <= new Date(desiredValue)
+      case 'date:greaterThan':
+        return new Date(textValue) > new Date(desiredValue)
+      case 'date:lessThan':
+        return new Date(textValue) < new Date(desiredValue)
+      default:
+        console.warn(`Unknown operator: ${operator}`)
+        return false
+    }
+  }
+
   private async evaluateStepConditions(step: any, documentData: any): Promise<boolean> {
     // If no field conditions are set, the step applies
     if (!step.field_name || !step.operator || !step.desiredValue) {
-      return true
+      return false
     }
 
     const fieldValue = this.getFieldValue(documentData, step.field_name)
     return this.evaluateCondition(fieldValue, step.operator, step.desiredValue)
   }
 
-  private getFieldValue(data: any, fieldPath: string): any {
-    return fieldPath.split('.').reduce((obj, key) => obj?.[key], data)
-  }
+  // private getFieldValue(data: any, fieldPath: string): any {
+  //   return fieldPath.split('.').reduce((obj, key) => obj?.[key], data)
+  // }
 
-  private evaluateCondition(fieldValue: any, operator: string, desiredValue: string): boolean {
-    switch (operator) {
-      case 'text:length:equals':
-        return String(fieldValue || '').length === parseInt(desiredValue)
-      case 'text:length:greaterThanEqualsTo':
-        return String(fieldValue || '').length >= parseInt(desiredValue)
-      case 'text:length:lessThanEqualsTo':
-        return String(fieldValue || '').length <= parseInt(desiredValue)
-      case 'text:length:greaterThan':
-        return String(fieldValue || '').length > parseInt(desiredValue)
-      case 'text:length:lessThan':
-        return String(fieldValue || '').length < parseInt(desiredValue)
-      case 'text:startsWith':
-        return String(fieldValue || '')
-          .toLowerCase()
-          .startsWith(desiredValue.toLowerCase())
-      case 'text:endsWith':
-        return String(fieldValue || '')
-          .toLowerCase()
-          .endsWith(desiredValue.toLowerCase())
-      case 'text:contains':
-        return String(fieldValue || '')
-          .toLowerCase()
-          .includes(desiredValue.toLowerCase())
-      case 'number:equals':
-        return Number(fieldValue) === Number(desiredValue)
-      case 'number:greaterThanEqualsTo':
-        return Number(fieldValue) >= Number(desiredValue)
-      case 'number:lessThanEqualsTo':
-        return Number(fieldValue) <= Number(desiredValue)
-      case 'number:greaterThan':
-        return Number(fieldValue) > Number(desiredValue)
-      case 'number:lessThan':
-        return Number(fieldValue) < Number(desiredValue)
-      case 'checkBox:equals':
-        return Boolean(fieldValue) === (desiredValue.toLowerCase() === 'true')
-      case 'date:equals':
-        return new Date(fieldValue).getTime() === new Date(desiredValue).getTime()
-      case 'date:greaterThanEqualsTo':
-        return new Date(fieldValue) >= new Date(desiredValue)
-      case 'date:lessThanEqualsTo':
-        return new Date(fieldValue) <= new Date(desiredValue)
-      case 'date:greaterThan':
-        return new Date(fieldValue) > new Date(desiredValue)
-      case 'date:lessThan':
-        return new Date(fieldValue) < new Date(desiredValue)
-      default:
-        console.warn(`Unknown operator: ${operator}`)
-        return false
-    }
-  }
+  // private evaluateCondition(fieldValue: any, operator: string, desiredValue: string): boolean {
+  //   switch (operator) {
+  //     case 'text:length:equals':
+  //       return String(fieldValue || '').length === parseInt(desiredValue)
+  //     case 'text:length:greaterThanEqualsTo':
+  //       return String(fieldValue || '').length >= parseInt(desiredValue)
+  //     case 'text:length:lessThanEqualsTo':
+  //       return String(fieldValue || '').length <= parseInt(desiredValue)
+  //     case 'text:length:greaterThan':
+  //       return String(fieldValue || '').length > parseInt(desiredValue)
+  //     case 'text:length:lessThan':
+  //       return String(fieldValue || '').length < parseInt(desiredValue)
+  //     case 'text:startsWith':
+  //       return String(fieldValue || '')
+  //         .toLowerCase()
+  //         .startsWith(desiredValue.toLowerCase())
+  //     case 'text:endsWith':
+  //       return String(fieldValue || '')
+  //         .toLowerCase()
+  //         .endsWith(desiredValue.toLowerCase())
+  //     case 'text:contains':
+  //       return String(fieldValue || '')
+  //         .toLowerCase()
+  //         .includes(desiredValue.toLowerCase())
+  //     case 'number:equals':
+  //       return Number(fieldValue) === Number(desiredValue)
+  //     case 'number:greaterThanEqualsTo':
+  //       return Number(fieldValue) >= Number(desiredValue)
+  //     case 'number:lessThanEqualsTo':
+  //       return Number(fieldValue) <= Number(desiredValue)
+  //     case 'number:greaterThan':
+  //       return Number(fieldValue) > Number(desiredValue)
+  //     case 'number:lessThan':
+  //       return Number(fieldValue) < Number(desiredValue)
+  //     case 'checkBox:equals':
+  //       return Boolean(fieldValue) === (desiredValue.toLowerCase() === 'true')
+  //     case 'date:equals':
+  //       return new Date(fieldValue).getTime() === new Date(desiredValue).getTime()
+  //     case 'date:greaterThanEqualsTo':
+  //       return new Date(fieldValue) >= new Date(desiredValue)
+  //     case 'date:lessThanEqualsTo':
+  //       return new Date(fieldValue) <= new Date(desiredValue)
+  //     case 'date:greaterThan':
+  //       return new Date(fieldValue) > new Date(desiredValue)
+  //     case 'date:lessThan':
+  //       return new Date(fieldValue) < new Date(desiredValue)
+  //     default:
+  //       console.warn(`Unknown operator: ${operator}`)
+  //       return false
+  //   }
+  // }
 
   private async updateWorkflowStatus(
     workflowId: string,
@@ -149,7 +278,7 @@ export class WorkflowEngine {
         limit: 1,
       })
 
-      console.log('Existing Status: ', existingStatus)
+      // console.log('Existing Status: ', existingStatus)
 
       // You can add more auto-approval logic here based on your business rules
       // For example, auto-approve if certain conditions are met

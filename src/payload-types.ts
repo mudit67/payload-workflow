@@ -241,7 +241,7 @@ export interface Workflow {
  */
 export interface WorkflowStatus {
   id: number;
-  workflow_id?: (number | null) | Workflow;
+  workflow_id: number | Workflow;
   doc_id?: string | null;
   step_id?: string | null;
   step_status?: ('approved' | 'rejected' | 'pending') | null;

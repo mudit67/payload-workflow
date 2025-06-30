@@ -17,6 +17,7 @@ export const WorkflowStatus: CollectionConfig = {
       name: 'workflow_id',
       type: 'relationship',
       relationTo: 'workflows',
+      required: true,
     },
     {
       name: 'doc_id',
