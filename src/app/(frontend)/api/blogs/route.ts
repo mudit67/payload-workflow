@@ -6,7 +6,8 @@ interface WorkflowStatus {
   id: string
   workflow_id: any
   doc_id: string
-  current_step: string
+  step_id: string
+  step_status: string
 }
 
 export async function GET(request: NextRequest) {
@@ -40,17 +41,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
     }
 
-    //Tmp Code
-
-    const postsCollection = payload.config.collections.find((col: any) => col.slug == 'posts')
-
-    console.log(postsCollection?.hooks)
-
     let posts = []
 
     if (user && user.role === 'user') {
-      // For regular users, only show posts in comment-only workflow steps
-      posts = await getCommentOnlyPosts(payload)
+      // For regular users, only show posts where all workflow steps are approved
+      posts = await getPostsWithAllStepsApproved(payload)
     } else if (user && (user.role === 'admin' || user.role === 'staff')) {
       // For admin/staff, show all posts
       const allPosts = await payload.find({
@@ -75,65 +70,60 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Helper function to get posts that are in comment-only workflow steps
-async function getCommentOnlyPosts(payload: any) {
+// Helper function to get posts where all workflow steps are approved
+async function getPostsWithAllStepsApproved(payload: any) {
   try {
-    // First, get all workflows to find which ones have comment-only steps
+    // Get all workflows
     const workflows = await payload.find({
       collection: 'workflows',
-      limit: 0, // Get all workflows
-    })
-
-    // Find workflows that have comment-only steps and get their step names
-    const commentOnlyWorkflowSteps: { workflowId: string; stepName: string }[] = []
-
-    workflows.docs.forEach((workflow: any) => {
-      workflow.steps.forEach((step: any) => {
-        if (step.type === 'comment-only') {
-          commentOnlyWorkflowSteps.push({
-            workflowId: workflow.id,
-            stepName: step.step_name,
-          })
-        }
-      })
-    })
-
-    if (commentOnlyWorkflowSteps.length === 0) {
-      return []
-    }
-
-    // Get workflow statuses for posts that are in comment-only steps
-    const workflowStatuses = await payload.find({
-      collection: 'workflowStatus',
-      where: {
-        and: [
-          {
-            workflow_id: {
-              in: commentOnlyWorkflowSteps.map((w) => w.workflowId),
-            },
-          },
-          {
-            current_step: {
-              in: commentOnlyWorkflowSteps.map((w) => w.stepName),
-            },
-          },
-        ],
-      },
       limit: 0,
     })
 
-    if (workflowStatuses.docs.length === 0) {
+    if (workflows.docs.length === 0) {
       return []
     }
 
-    // Get the actual posts using the doc_ids from workflow statuses
-    const postIds = workflowStatuses.docs.map((status: WorkflowStatus) => status.doc_id)
+    // For each workflow, get all posts where all steps are approved
+    const approvedPostIdsSet = new Set()
 
+    for (const workflow of workflows.docs) {
+      // Get all steps count
+      const totalSteps = workflow.steps.length
+
+      // Get workflowStatus grouped by doc_id where all steps are approved
+      const workflowStatuses = await payload.find({
+        collection: 'workflowStatus',
+        where: {
+          workflow_id: { equals: workflow.id },
+          step_status: { equals: 'approved' },
+        },
+        limit: 0,
+      })
+
+      // Count approved steps per doc_id
+      const approvedStepsCount: Record<string, number> = {}
+      workflowStatuses.docs.forEach((status: any) => {
+        approvedStepsCount[status.doc_id] = (approvedStepsCount[status.doc_id] || 0) + 1
+      })
+
+      // Add doc_ids where approved steps count equals total steps
+      for (const [docId, count] of Object.entries(approvedStepsCount)) {
+        if (count === totalSteps) {
+          approvedPostIdsSet.add(docId)
+        }
+      }
+    }
+
+    if (approvedPostIdsSet.size === 0) {
+      return []
+    }
+
+    // Fetch posts with approved workflow
     const posts = await payload.find({
       collection: 'posts',
       where: {
         id: {
-          in: postIds,
+          in: Array.from(approvedPostIdsSet),
         },
       },
       limit: 50,
@@ -142,7 +132,7 @@ async function getCommentOnlyPosts(payload: any) {
 
     return posts.docs
   } catch (error) {
-    console.error('Error fetching comment-only posts:', error)
+    console.error('Error fetching posts with all steps approved:', error)
     return []
   }
 }

@@ -22,16 +22,24 @@ interface User {
 }
 
 interface WorkflowStep {
+  id: string
   step_name: string
   type: 'approval' | 'review' | 'sign-off' | 'comment-only'
+  assigned_to?: any
+  field_name?: string
+  operator?: string
+  desiredValue?: string
 }
 
 interface WorkflowData {
   id: string
   name: string
   steps: WorkflowStep[]
-  currentStep: string | null
-  statusId: string | null
+  currentStepStatuses: Array<{
+    step_id: string
+    step_status: 'approved' | 'rejected' | 'pending'
+    statusId: string | null
+  }>
 }
 
 interface PostResponse {
@@ -74,6 +82,8 @@ export default function PostPage() {
         }
 
         const result = await response.json()
+        console.log('Res', result)
+
         setData(result)
       } catch (err) {
         console.error('Error fetching post:', err)
@@ -88,8 +98,13 @@ export default function PostPage() {
     }
   }, [id])
 
-  const handleWorkflowStepChange = async (newStep: string) => {
+  const handleStepStatusChange = async (
+    stepId: string,
+    newStatus: 'approved' | 'rejected' | 'pending',
+  ) => {
     if (!data?.workflow) return
+
+    console.log('Step Id', stepId)
 
     setUpdatingWorkflow(true)
     try {
@@ -100,8 +115,8 @@ export default function PostPage() {
         },
         credentials: 'include',
         body: JSON.stringify({
-          workflowStep: newStep,
-          statusId: data.workflow.statusId,
+          stepId: stepId,
+          stepStatus: newStatus,
         }),
       })
 
@@ -121,8 +136,11 @@ export default function PostPage() {
               workflow: prev.workflow
                 ? {
                     ...prev.workflow,
-                    currentStep: newStep,
-                    statusId: result.workflowStatus.id,
+                    currentStepStatuses: prev.workflow.currentStepStatuses.map((status) =>
+                      status.step_id === stepId
+                        ? { ...status, step_status: newStatus, statusId: result.workflowStatus.id }
+                        : status,
+                    ),
                   }
                 : null,
             }
@@ -148,9 +166,18 @@ export default function PostPage() {
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
 
+  const getStatusColor = (status: string) => {
+    const colors = {
+      approved: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+    }
+    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center ">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading post...</p>
@@ -215,10 +242,13 @@ export default function PostPage() {
     return <div>No data available</div>
   }
 
+  console.log(data)
+
+  // Properly destructure the data
   const { post, user, workflow } = data
 
   return (
-    <div className="min-h-screen bg-gray-50 ">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -239,7 +269,10 @@ export default function PostPage() {
                 <div className="mt-1 flex items-center space-x-4 text-sm text-gray-600">
                   {post.authors && (
                     <span>
-                      By: {typeof post.authors === 'object' ? post.authors.email : 'Unknown Author'}
+                      By:{' '}
+                      {typeof post.authors === 'object'
+                        ? post.authors.name || post.authors.email
+                        : 'Unknown Author'}
                     </span>
                   )}
                   <span>•</span>
@@ -248,16 +281,12 @@ export default function PostPage() {
                       ? `Published on ${new Date(post.publishedAt).toLocaleDateString()}`
                       : `Created on ${new Date(post.createdAt).toLocaleDateString()}`}
                   </span>
-                  {workflow?.currentStep && (
+                  {/* Show workflow completion status for users */}
+                  {user.role === 'user' && (
                     <>
                       <span>•</span>
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStepTypeColor(
-                          workflow.steps.find((s) => s.step_name === workflow.currentStep)?.type ||
-                            '',
-                        )}`}
-                      >
-                        {workflow.currentStep}
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Approved
                       </span>
                     </>
                   )}
@@ -280,6 +309,71 @@ export default function PostPage() {
             )}
           </div>
 
+          {/* Workflow Status Section - Only for admin/staff */}
+          {workflow && (user.role === 'admin' || user.role === 'staff') && (
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Workflow Status</h3>
+              <div className="space-y-4">
+                {workflow.steps.map((step, stepIndex) => {
+                  const stepStatus = workflow.currentStepStatuses.find(
+                    (status) => status.step_id === step.id,
+                  )
+                  console.log('stepStatus: ', stepStatus, workflow)
+
+                  return (
+                    <div
+                      key={stepIndex}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className="text-sm font-medium text-gray-900">
+                          {stepIndex + 1}. {step.step_name}
+                        </span>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStepTypeColor(step.type)}`}
+                        >
+                          {step.type}
+                        </span>
+                        {step.assigned_to && (
+                          <span className="text-xs text-gray-500">
+                            →{' '}
+                            {typeof step.assigned_to === 'object'
+                              ? step.assigned_to.name || step.assigned_to.email
+                              : 'Assigned'}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(stepStatus?.step_status || 'pending')}`}
+                        >
+                          {stepStatus?.step_status || 'pending'}
+                        </span>
+
+                        <select
+                          value={stepStatus?.step_status || 'pending'}
+                          onChange={(e) =>
+                            handleStepStatusChange(
+                              step.id,
+                              e.target.value as 'approved' | 'rejected' | 'pending',
+                            )
+                          }
+                          disabled={updatingWorkflow}
+                          className="px-3 py-1 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="approved">Approved</option>
+                          <option value="rejected">Rejected</option>
+                        </select>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">
             <div className="text-sm text-gray-500">
@@ -291,38 +385,18 @@ export default function PostPage() {
                   Add Comment
                 </button>
               ) : (
-                <>
-                  <Link
-                    href={`/admin/collections/posts/${post.id}`}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500"
-                  >
-                    Edit Post
-                  </Link>
-                  {workflow && (
-                    <div className="relative">
-                      <select
-                        value={workflow.currentStep || ''}
-                        onChange={(e) => handleWorkflowStepChange(e.target.value)}
-                        disabled={updatingWorkflow}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                      >
-                        <option value="" disabled>
-                          Select workflow step
-                        </option>
-                        {workflow.steps.map((step) => (
-                          <option key={step.step_name} value={step.step_name}>
-                            {step.step_name} ({step.type})
-                          </option>
-                        ))}
-                      </select>
-                      {updatingWorkflow && (
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
+                <Link
+                  href={`/admin/collections/posts/${post.id}`}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500"
+                >
+                  Edit Post
+                </Link>
+              )}
+              {updatingWorkflow && (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+                  <span className="ml-2 text-sm text-gray-500">Updating...</span>
+                </div>
               )}
             </div>
           </div>

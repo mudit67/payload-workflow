@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { convertLexicalToPlaintext } from '@payloadcms/richtext-lexical/plaintext'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -46,12 +45,29 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
-    if (post) {
-      console.log(post.content)
-      // convertLexicalToPlaintext({ data: post.content })
+    // Role-based access control for users
+    if (user.role === 'user') {
+      // For users, check if ALL workflow steps are approved
+      const isPostFullyApproved = await checkIfPostFullyApproved(payload, id)
+
+      if (!isPostFullyApproved) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      }
+
+      // Return post without workflow data for regular users
+      return NextResponse.json({
+        post,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+        },
+        workflow: null, // Don't send workflow data to regular users
+        canAccess: true,
+      })
     }
 
-    // Get workflow information for posts collection
+    // For admin/staff, get full workflow information
     const postsWorkflow = await payload.find({
       collection: 'workflows',
       where: {
@@ -63,46 +79,35 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     })
 
     let workflowData = null
-    let currentWorkflowStatus = null
 
     if (postsWorkflow.docs.length > 0) {
       const workflow = postsWorkflow.docs[0]
 
-      // Get current workflow status for this post
-      const workflowStatus = await payload.find({
+      // Get ALL workflow statuses for this post
+      const workflowStatuses = await payload.find({
         collection: 'workflowStatus',
         where: {
-          doc_id: {
-            equals: id,
-          },
+          and: [{ workflow_id: { equals: workflow.id } }, { doc_id: { equals: id } }],
         },
-        limit: 1,
+        limit: 0, // Get all statuses
       })
 
-      currentWorkflowStatus = workflowStatus.docs.length > 0 ? workflowStatus.docs[0] : null
+      // Create step status mapping
+      const currentStepStatuses = workflow.steps?.map((step: any) => {
+        const stepStatus = workflowStatuses.docs.find((status: any) => status.step_id === step.id)
+
+        return {
+          step_id: stepStatus?.step_id,
+          step_status: stepStatus?.step_status || 'pending',
+          statusId: stepStatus?.id || null,
+        }
+      })
 
       workflowData = {
         id: workflow.id,
         name: workflow.name,
         steps: workflow.steps,
-        currentStep: currentWorkflowStatus?.current_step || null,
-        statusId: currentWorkflowStatus?.id || null,
-      }
-    }
-
-    // Role-based access control
-    if (user.role === 'user') {
-      // Check if post is in comment-only workflow step
-      if (!currentWorkflowStatus) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 })
-      }
-
-      const currentStep = workflowData?.steps.find(
-        (s: any) => s.step_name === currentWorkflowStatus.current_step,
-      )
-
-      if (!currentStep || currentStep.type !== 'comment-only') {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+        currentStepStatuses,
       }
     }
 
@@ -113,7 +118,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         email: user.email,
         role: user.role,
       },
-      workflow: workflowData,
+      workflow: workflowData, // Send full workflow data to admin/staff
       canAccess: true,
     })
   } catch (error) {
@@ -122,11 +127,51 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-// Add PATCH method to update workflow status
+// Helper function to check if all workflow steps are approved
+async function checkIfPostFullyApproved(payload: any, postId: string): Promise<boolean> {
+  try {
+    // Get the workflow for posts
+    const postsWorkflow = await payload.find({
+      collection: 'workflows',
+      where: {
+        collection_name: { equals: 'posts' },
+      },
+      limit: 1,
+    })
+
+    if (postsWorkflow.docs.length === 0) {
+      return false // No workflow means no access for users
+    }
+
+    const workflow = postsWorkflow.docs[0]
+    const totalSteps = workflow.steps.length
+
+    // Get approved steps for this post
+    const approvedStatuses = await payload.find({
+      collection: 'workflowStatus',
+      where: {
+        and: [
+          { workflow_id: { equals: workflow.id } },
+          { doc_id: { equals: postId } },
+          { step_status: { equals: 'approved' } },
+        ],
+      },
+      limit: 0,
+    })
+
+    // Check if all steps are approved
+    return approvedStatuses.docs.length === totalSteps
+  } catch (error) {
+    console.error('Error checking post approval status:', error)
+    return false
+  }
+}
+
+// Updated PATCH method for step status changes
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const payload = await getPayload({ config })
-    const { id } = params
+    const { id } = await params
     const token = request.cookies.get('payload-token')?.value
     const body = await request.json()
 
@@ -161,45 +206,80 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
-    const { workflowStep, statusId } = body
+    const { stepId, stepStatus } = body
 
-    if (!workflowStep) {
-      return NextResponse.json({ error: 'Workflow step is required' }, { status: 400 })
+    if (!stepId || !stepStatus) {
+      return NextResponse.json(
+        {
+          error: 'Step ID and step status are required',
+        },
+        { status: 400 },
+      )
+    }
+
+    // Validate step status
+    if (!['approved', 'rejected', 'pending'].includes(stepStatus)) {
+      return NextResponse.json(
+        {
+          error: 'Invalid step status. Must be approved, rejected, or pending',
+        },
+        { status: 400 },
+      )
     }
 
     // Get the workflow for posts collection
     const postsWorkflow = await payload.find({
       collection: 'workflows',
       where: {
-        collection_name: {
-          equals: 'posts',
-        },
+        collection_name: { equals: 'posts' },
       },
       limit: 1,
     })
 
     if (postsWorkflow.docs.length === 0) {
-      return NextResponse.json({ error: 'No workflow found for posts collection' }, { status: 404 })
+      return NextResponse.json(
+        {
+          error: 'No workflow found for posts collection',
+        },
+        { status: 404 },
+      )
     }
 
     const workflow = postsWorkflow.docs[0]
 
-    console.log('Workflow: ', workflow)
+    // Validate step ID exists in workflow
+    // const stepIndex = parseInt(stepId)
+    // if (workflow && workflow.steps && (stepIndex < 0 || stepIndex >= workflow.steps.length)) {
+    //   return NextResponse.json(
+    //     {
+    //       error: 'Invalid step ID',
+    //     },
+    //     { status: 400 },
+    //   )
+    // }
 
-    // Validate that the step exists in the workflow
-    const stepExists = workflow.steps.some((step: any) => step.step_name === workflowStep)
-    if (!stepExists) {
-      return NextResponse.json({ error: 'Invalid workflow step' }, { status: 400 })
-    }
+    const stepIndex = workflow.steps?.findIndex((step) => step.id == stepId)
+    // Check if workflow status already exists for this document and step
+    const existingStatus = await payload.find({
+      collection: 'workflowStatus',
+      where: {
+        and: [
+          { workflow_id: { equals: workflow.id } },
+          { doc_id: { equals: id } },
+          { step_id: { equals: stepId } },
+        ],
+      },
+      limit: 1,
+    })
 
     let updatedStatus
-    if (statusId) {
+    if (existingStatus.docs.length > 0) {
       // Update existing workflow status
       updatedStatus = await payload.update({
         collection: 'workflowStatus',
-        id: statusId,
+        id: existingStatus.docs[0].id,
         data: {
-          current_step: workflowStep,
+          step_status: stepStatus,
         },
       })
     } else {
@@ -209,15 +289,19 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         data: {
           workflow_id: workflow.id,
           doc_id: id,
-          current_step: workflowStep,
+          step_id: stepId,
+          step_status: stepStatus,
         },
       })
     }
 
+    const stepName = workflow.steps[stepIndex]?.step_name || null
+
     return NextResponse.json({
       success: true,
       workflowStatus: updatedStatus,
-      message: `Workflow status updated to "${workflowStep}"`,
+      stepName: stepName,
+      message: `Step "${stepName}" status updated to "${stepStatus}"`,
     })
   } catch (error) {
     console.error('Error updating workflow status:', error)

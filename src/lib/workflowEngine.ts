@@ -278,11 +278,6 @@ export class WorkflowEngine {
         limit: 1,
       })
 
-      // console.log('Existing Status: ', existingStatus)
-
-      // You can add more auto-approval logic here based on your business rules
-      // For example, auto-approve if certain conditions are met
-
       const statusData = {
         workflow_id: workflowId,
         doc_id: docId,
@@ -292,6 +287,9 @@ export class WorkflowEngine {
 
       if (existingStatus.docs.length > 0) {
         // Update existing status
+        if (existingStatus.docs[0].step_status == 'approved') {
+          stepStatus = true
+        }
         await this.payload.update({
           collection: 'workflowStatus',
           id: existingStatus.docs[0].id,
