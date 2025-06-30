@@ -72,6 +72,7 @@ export interface Config {
     posts: Post;
     workflows: Workflow;
     workflowStatus: WorkflowStatus;
+    products: Product;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -83,6 +84,7 @@ export interface Config {
     posts: PostsSelect<false> | PostsSelect<true>;
     workflows: WorkflowsSelect<false> | WorkflowsSelect<true>;
     workflowStatus: WorkflowStatusSelect<false> | WorkflowStatusSelect<true>;
+    products: ProductsSelect<false> | ProductsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -241,10 +243,22 @@ export interface Workflow {
  */
 export interface WorkflowStatus {
   id: number;
-  workflow_id: number | Workflow;
+  workflow_id?: (number | null) | Workflow;
   doc_id?: string | null;
   step_id?: string | null;
   step_status?: ('approved' | 'rejected' | 'pending') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: number;
+  name?: string | null;
+  price?: number | null;
+  desc?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -274,6 +288,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'workflowStatus';
         value: number | WorkflowStatus;
+      } | null)
+    | ({
+        relationTo: 'products';
+        value: number | Product;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -401,6 +419,17 @@ export interface WorkflowStatusSelect<T extends boolean = true> {
   doc_id?: T;
   step_id?: T;
   step_status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products_select".
+ */
+export interface ProductsSelect<T extends boolean = true> {
+  name?: T;
+  price?: T;
+  desc?: T;
   updatedAt?: T;
   createdAt?: T;
 }

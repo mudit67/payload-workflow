@@ -160,6 +160,7 @@ export default function CreateWorkflowClient({ collections }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    //
 
     try {
       // Transform form data to match Payload collection structure
@@ -204,7 +205,7 @@ export default function CreateWorkflowClient({ collections }: Props) {
       }
 
       // Step 1: Create the workflow
-      const workflowResponse = await fetch('/api/workflows', {
+      const workflowResponse = await fetch('/api/workflow', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -230,7 +231,7 @@ export default function CreateWorkflowClient({ collections }: Props) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            workflowId: workflowResult.doc.id,
+            workflowId: workflowResult.workflow.id,
             collectionName: workflowData.collection_name,
             workflowData: workflowData,
             processExistingDocuments: true,

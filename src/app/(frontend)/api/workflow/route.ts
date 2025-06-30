@@ -6,8 +6,9 @@ export async function POST(request: NextRequest) {
   try {
     const payload = await getPayload({ config })
     const body = await request.json()
+    // console.log('/api/workflow/')
 
-    console.log(body)
+    // console.log(body)
 
     // Validate required fields
     if (!body.name || !body.collection_name || !body.steps) {

@@ -12,6 +12,8 @@ import { Media } from './collections/Media'
 import { Posts } from './collections/Posts'
 import { Workflows } from './collections/Workflow'
 import { WorkflowStatus } from './collections/WorkflowStatus'
+import { Products } from './collections/Product'
+// import { AssignedWorkflowSteps } from './components/admin/workflowStatus'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -22,8 +24,11 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    components: {
+      beforeDashboard: ['./components/admin/workflowStepsStatus.tsx'],
+    },
   },
-  collections: [Users, Media, Posts, Workflows, WorkflowStatus],
+  collections: [Users, Media, Posts, Workflows, WorkflowStatus, Products],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
