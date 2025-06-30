@@ -5,7 +5,6 @@ import type {
   CollectionAfterMeHook,
   CollectionBeforeDeleteHook,
   CollectionBeforeLoginHook,
-  CollectionBeforeReadHook,
   CollectionConfig,
   Where,
 } from 'payload'

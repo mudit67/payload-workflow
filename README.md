@@ -1,67 +1,146 @@
-# Payload Blank Template
+# Dynamic Workflow Engine
 
-This template comes configured with the bare minimum to get started on anything you need.
+## Setup Instructions
 
-## Quick start
+`You must have docker installed on your device. Navigate to the root folder of your project.`
 
-This template can be deployed directly from our Cloud hosting and it will setup MongoDB and cloud S3 object storage for media.
+```bash
+docker compose up &    
+docker exec -it plcms-con /bin/sh # This will connect your terminal to the docker container
+npm install # install the dependencies
+npm run dev # You will have to set up .env variable for your database before this. I used neonDb btw. 
+```
 
-## Quick Start - local setup
+## Architecture
 
-To spin up this template locally, follow these steps:
+### Workflow Collection
 
-### Clone
+```ts
+ fields: [
+    {
+      name: 'name',
+      type: 'text',
+    },
+    {
+      name: 'collection_name',
+      type: 'text',
+    },
+    {
+      name: 'steps',
+      type: 'array',
+      fields: [
+        { name: 'step_name', type: 'text' },
+        {
+          type: 'select',
+          name: 'type',
+          options: ['approval', 'review', 'sign-off', 'comment-only'],
+        },
+        {
+          type: 'relationship',
+          relationTo: 'users',
+          name: 'assigned_to',
+        },
+        {
+          name: 'field_name',
+          type: 'text',
+        },
+        {
+          type: 'select',
+          name: 'operator',
+          options: [
+            { label: 'Text Length Equals', value: 'text:length:equals' },
+            { label: 'Text Length >=', value: 'text:length:greaterThanEqualsTo' },
+            { label: 'Text Length <=', value: 'text:length:lessThanEqualsTo' },
+            { label: 'Text Length >', value: 'text:length:greaterThan' },
+            { label: 'Text Length <', value: 'text:length:lessThan' },
+            { label: 'Text Starts With', value: 'text:startsWith' },
+            { label: 'Text Ends With', value: 'text:endsWith' },
+            { label: 'Text Contains', value: 'text:contains' },
+//                        .
+//                        .
+//                        .
+          ],
+        },
+        {
+          name: 'desiredValue',
+          type: 'text',
+        },
+      ],
+```
 
-After you click the `Deploy` button above, you'll want to have standalone copy of this repo on your machine. If you've already cloned this repo, skip to [Development](#development).
+The steps field stores the array of steps which in turn stores the condition to be evaluated for the auto-approval of documents of the collections. This works dynamically and is not hard coded into the targeted collections themselves.
 
-### Development
+### Workflow Status
 
-1. First [clone the repo](#clone) if you have not done so already
-2. `cd my-project && cp .env.example .env` to copy the example environment variables. You'll need to add the `MONGODB_URI` from your Cloud project to your `.env` if you want to use S3 storage and the MongoDB database that was created for you.
+This is the collection that actually store the status of each document of the collection.
 
-3. `pnpm install && pnpm dev` to install dependencies and start the dev server
-4. open `http://localhost:3000` to open the app in your browser
+```ts
+  fields: [
+    {
+      name: 'workflow_id',
+      type: 'relationship',
+      relationTo: 'workflows',
+    },
+    {
+      name: 'doc_id',
+      type: 'text',
+    },
+    {
+      name: 'step_id',
+      type: 'text',
+    },
+    {
+      name: 'step_status',
+      type: 'radio',
+      options: ['approved', 'rejected', 'pending'],
+    },
+  ],
+```
 
-That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
+![alt text](./imgs/image-2.png)
 
-#### Docker (Optional)
+As soon as a workflow is created, a hook is registered on the target Collection (i.e. Posts, Contracts) which looks for any changes, if any changes occur it trigger the workflow engine which evaluates the conditions established on the creation of workflow and changes the status in the WorkflowStatus collection.
 
-If you prefer to use Docker for local development instead of a local MongoDB instance, the provided docker-compose.yml file can be used.
+### Workflow Logs
 
-To do so, follow these steps:
+```ts
+access: {
+    read: isStaff,
+    create: isStaff,
+    update: noOne,
+    delete: noOne,
+    unlock: noOne,
+  },
+  fields: [
+    {
+      name: 'initiator',
+      relationTo: 'users',
+      type: 'relationship',
+    },
+    {
+      name: 'collectionAffected',
+      type: 'text',
+    },
+    {
+      name: 'documentAffected',
+      type: 'text',
+    },
+    {
+      type: 'text',
+      name: 'prevStatus',
+    },
 
-- Modify the `MONGODB_URI` in your `.env` file to `mongodb://127.0.0.1/<dbname>`
-- Modify the `docker-compose.yml` file's `MONGODB_URI` to match the above `<dbname>`
-- Run `docker-compose up` to start the database, optionally pass `-d` to run in the background.
+    {
+      type: 'text',
+      name: 'curStatus',
+    },
+  ],
+```
 
-## How it works
+We also have the workflow Logs which can only be read and written into. Its documents can't be deleted or updated.
 
-The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
+### Workflow Status in Admin UI
 
-### Collections
+![alt text](./imgs/image.png)
 
-See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
-
-- #### Users (Authentication)
-
-  Users are auth-enabled collections that have access to the admin panel.
-
-  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/main/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
-
-- #### Media
-
-  This is the uploads enabled collection. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
-
-### Docker
-
-Alternatively, you can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
-
-1. Follow [steps 1 and 2 from above](#development), the docker-compose file will automatically use the `.env` file in your project root
-1. Next run `docker-compose up`
-1. Follow [steps 4 and 5 from above](#development) to login and create your first admin user
-
-That's it! The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
-
-## Questions
-
-If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).
+Also added this custom component to admin UI which shows the workflow steps that the user is assigned to. The user can change the status(s) in this UI.
