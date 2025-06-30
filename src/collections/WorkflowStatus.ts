@@ -23,8 +23,13 @@ export const WorkflowStatus: CollectionConfig = {
       type: 'text',
     },
     {
-      name: 'current_step',
+      name: 'step_id',
       type: 'text',
+    },
+    {
+      name: 'step_status',
+      type: 'radio',
+      options: ['approved', 'rejected', 'pending'],
     },
   ],
   timestamps: true,

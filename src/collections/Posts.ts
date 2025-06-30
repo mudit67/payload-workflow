@@ -1,5 +1,6 @@
 import { isAdmin, isStaff, authenticated } from '@/authentication/isAuth'
 import type { CollectionConfig } from 'payload'
+import { bfReadHook } from './Workflow'
 
 export const Posts: CollectionConfig = {
   slug: 'posts',
@@ -31,4 +32,7 @@ export const Posts: CollectionConfig = {
       type: 'date',
     },
   ],
+  hooks: {
+    beforeRead: [bfReadHook],
+  },
 }

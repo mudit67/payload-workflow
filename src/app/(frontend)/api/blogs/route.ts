@@ -40,12 +40,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
     }
 
+    //Tmp Code
+
+    const postsCollection = payload.config.collections.find((col: any) => col.slug == 'posts')
+
+    console.log(postsCollection?.hooks)
+
     let posts = []
 
-    if (user.role === 'user') {
+    if (user && user.role === 'user') {
       // For regular users, only show posts in comment-only workflow steps
       posts = await getCommentOnlyPosts(payload)
-    } else if (user.role === 'admin' || user.role === 'staff') {
+    } else if (user && (user.role === 'admin' || user.role === 'staff')) {
       // For admin/staff, show all posts
       const allPosts = await payload.find({
         collection: 'posts',
@@ -58,9 +64,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       posts,
       user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
+        id: user ? user.id : null,
+        email: user ? user.email : null,
+        role: user ? user.role : null,
       },
     })
   } catch (error) {

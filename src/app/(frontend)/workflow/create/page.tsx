@@ -10,16 +10,26 @@ interface Collection {
     singular: string
     plural: string
   }
+  fields: Array<{
+    name: string
+    type: string
+  }>
 }
 
 export default async function CreateWorkflowPage() {
   // This runs on the server
   const payload = await getPayload({ config: configPromise })
 
-  // Get collections server-side
+  // Get collections server-side with their fields
   const allCollections = payload.config.collections.map((collection) => ({
     slug: collection.slug,
     labels: collection.labels || { singular: collection.slug, plural: collection.slug },
+    fields: collection.fields
+      .map((field: any) => ({
+        name: field.name,
+        type: field.type,
+      }))
+      .filter((field: any) => field.name && field.name !== 'id'), // Filter out system fields
   }))
 
   // Filter out system collections

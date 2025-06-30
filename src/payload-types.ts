@@ -203,6 +203,32 @@ export interface Workflow {
     | {
         step_name?: string | null;
         type?: ('approval' | 'review' | 'sign-off' | 'comment-only') | null;
+        assigned_to?: (number | null) | User;
+        field_name?: string | null;
+        operator?:
+          | (
+              | 'text:length:equals'
+              | 'text:length:greaterThanEqualsTo'
+              | 'text:length:lessThanEqualsTo'
+              | 'text:length:greaterThan'
+              | 'text:length:lessThan'
+              | 'text:startsWith'
+              | 'text:endsWith'
+              | 'text:contains'
+              | 'number:equals'
+              | 'number:greaterThanEqualsTo'
+              | 'number:lessThanEqualsTo'
+              | 'number:greaterThan'
+              | 'number:lessThan'
+              | 'checkBox:equals'
+              | 'date:equals'
+              | 'date:greaterThanEqualsTo'
+              | 'date:lessThanEqualsTo'
+              | 'date:greaterThan'
+              | 'date:lessThan'
+            )
+          | null;
+        desiredValue?: string | null;
         id?: string | null;
       }[]
     | null;
@@ -217,7 +243,8 @@ export interface WorkflowStatus {
   id: number;
   workflow_id?: (number | null) | Workflow;
   doc_id?: string | null;
-  current_step?: string | null;
+  step_id?: string | null;
+  step_status?: ('approved' | 'rejected' | 'pending') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -356,6 +383,10 @@ export interface WorkflowsSelect<T extends boolean = true> {
     | {
         step_name?: T;
         type?: T;
+        assigned_to?: T;
+        field_name?: T;
+        operator?: T;
+        desiredValue?: T;
         id?: T;
       };
   updatedAt?: T;
@@ -368,7 +399,8 @@ export interface WorkflowsSelect<T extends boolean = true> {
 export interface WorkflowStatusSelect<T extends boolean = true> {
   workflow_id?: T;
   doc_id?: T;
-  current_step?: T;
+  step_id?: T;
+  step_status?: T;
   updatedAt?: T;
   createdAt?: T;
 }
