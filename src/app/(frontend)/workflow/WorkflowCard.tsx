@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Workflow } from './page'
+import { Workflow } from '@/payload-types'
 
 // interface WorkflowStep {
 //   step_name: string
@@ -70,7 +70,7 @@ export function WorkflowCard({ workflow }: { workflow: Workflow }) {
             </div>
             <div className="flex-shrink-0">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                {workflow.steps.length} steps
+                {workflow.steps && workflow.steps.length} steps
               </span>
             </div>
           </div>
@@ -79,25 +79,28 @@ export function WorkflowCard({ workflow }: { workflow: Workflow }) {
           <div className="mb-4">
             <h4 className="text-sm font-medium text-gray-700 mb-2">Steps:</h4>
             <div className="space-y-2">
-              {workflow.steps.slice(0, 3).map((step, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 truncate flex-1">
-                    {index + 1}. {step.step_name}
-                    {step.assigned_to && (
-                      <span className="text-xs text-gray-500 ml-2">
-                        →{' '}
-                        {typeof step.assigned_to === 'object' ? step.assigned_to.email : 'Assigned'}
-                      </span>
-                    )}
-                  </span>
-                  <span
-                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${stepTypeColors[step.type]}`}
-                  >
-                    {step.type}
-                  </span>
-                </div>
-              ))}
-              {workflow.steps.length > 3 && (
+              {workflow.steps &&
+                workflow.steps.slice(0, 3).map((step, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 truncate flex-1">
+                      {index + 1}. {step.step_name}
+                      {step.assigned_to && (
+                        <span className="text-xs text-gray-500 ml-2">
+                          →{' '}
+                          {typeof step.assigned_to === 'object'
+                            ? step.assigned_to.email
+                            : 'Assigned'}
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${stepTypeColors[step.type || 'comment-only']}`}
+                    >
+                      {step.type}
+                    </span>
+                  </div>
+                ))}
+              {workflow.steps && workflow.steps.length > 3 && (
                 <p className="text-xs text-gray-500">+{workflow.steps.length - 3} more steps</p>
               )}
             </div>

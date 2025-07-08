@@ -25,6 +25,8 @@ interface PostsResponse {
   user: User
 }
 
+// export const revalidate = 0
+
 export default function HomePage() {
   const [data, setData] = useState<PostsResponse | null>(null)
   const [loading, setLoading] = useState(true)

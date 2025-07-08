@@ -16,6 +16,8 @@ interface Collection {
   }>
 }
 
+export const revalidate = 0
+
 export default async function CreateWorkflowPage() {
   // This runs on the server
   const payload = await getPayload({ config: configPromise })

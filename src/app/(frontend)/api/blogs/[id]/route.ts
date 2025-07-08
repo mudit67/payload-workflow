@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { NextApiRequest } from 'next'
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest) {
+  const id = request.url.substring(request.url.lastIndexOf('/') + 1)
+  console.log(id)
   try {
+    // const { id } = request.
     const payload = await getPayload({ config })
-    const { id } = await params
+    // const { id } = await params
     const token = request.cookies.get('payload-token')?.value
+    // console.log(request.cookies)
+    console.log(token)
 
     if (!token) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
@@ -168,10 +174,11 @@ async function checkIfPostFullyApproved(payload: any, postId: string): Promise<b
 }
 
 // Updated PATCH method for step status changes
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest) {
   try {
     const payload = await getPayload({ config })
-    const { id } = await params
+    // const { id } = await params
+    const id = request.url.substring(request.url.lastIndexOf('/') + 1)
     const token = request.cookies.get('payload-token')?.value
     const body = await request.json()
 
@@ -258,7 +265,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     //   )
     // }
 
-    const stepIndex = workflow.steps?.findIndex((step) => step.id == stepId)
+    const stepIndex = workflow.steps?.findIndex((step) => step.id == stepId) || 0
+    if (stepIndex == -1) {
+      return NextResponse.json({ error: 'Step Not Found!' }, { status: 400 })
+    }
     // Check if workflow status already exists for this document and step
     const existingStatus = await payload.find({
       collection: 'workflowStatus',
@@ -295,14 +305,23 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       })
     }
 
-    const stepName = workflow.steps[stepIndex]?.step_name || null
+    if (workflow && workflow.steps) {
+      const stepName = workflow.steps[stepIndex]?.step_name || null
 
-    return NextResponse.json({
-      success: true,
-      workflowStatus: updatedStatus,
-      stepName: stepName,
-      message: `Step "${stepName}" status updated to "${stepStatus}"`,
-    })
+      return NextResponse.json({
+        success: true,
+        workflowStatus: updatedStatus,
+        stepName: stepName,
+        message: `Step "${stepName}" status updated to "${stepStatus}"`,
+      })
+    } else {
+      console.error(
+        'Error updating workflow status: Workflow, Workflow.Steps, StepIndex not defined',
+        workflow,
+        stepIndex,
+      )
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
   } catch (error) {
     console.error('Error updating workflow status:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

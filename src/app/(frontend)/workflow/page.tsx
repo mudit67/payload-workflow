@@ -2,7 +2,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { WorkflowCard } from './WorkflowCard'
 import { CreateWorkflowButton } from './createWorkflowButton'
-
+import { Workflow } from '@/payload-types'
 interface WorkflowStep {
   step_name: string
   type: 'approval' | 'review' | 'sign-off' | 'comment-only'
@@ -13,14 +13,14 @@ interface WorkflowStep {
   id?: string
 }
 
-export interface Workflow {
-  id: string
-  name: string
-  collection_name: string
-  steps: WorkflowStep[]
-  createdAt: string
-  updatedAt: string
-}
+// export interface Workflow {
+//   id: number
+//   name: string
+//   collection_name: string
+//   steps: WorkflowStep[]
+//   createdAt: string
+//   updatedAt: string
+// }
 
 interface WorkflowStatusSummary {
   totalStatuses: number
@@ -94,9 +94,7 @@ export default async function WorkflowsPage() {
                     <dt className="text-sm font-medium text-gray-500 truncate">
                       Active Collections
                     </dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {new Set(workflows.docs.map((w: Workflow) => w.collection_name)).size}
-                    </dd>
+                    <dd className="text-lg font-medium text-gray-900">{}</dd>
                   </dl>
                 </div>
               </div>
@@ -144,9 +142,7 @@ export default async function WorkflowsPage() {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Total Steps</dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {workflows.docs.reduce((acc: number, w: Workflow) => acc + w.steps.length, 0)}
-                    </dd>
+                    <dd className="text-lg font-medium text-gray-900">{workflows.docs.length}</dd>
                   </dl>
                 </div>
               </div>
@@ -158,7 +154,7 @@ export default async function WorkflowsPage() {
             <EmptyState />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {workflows.docs.map((workflow: Workflow) => (
+              {workflows.docs.map((workflow) => (
                 <WorkflowCard key={workflow.id} workflow={workflow} />
               ))}
             </div>
@@ -178,6 +174,8 @@ export default async function WorkflowsPage() {
     )
   }
 }
+
+export const revalidate = 0
 
 async function getWorkflowStatusSummary(payload: any): Promise<WorkflowStatusSummary> {
   try {

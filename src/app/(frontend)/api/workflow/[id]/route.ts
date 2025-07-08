@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest) {
   try {
     const payload = await getPayload({ config })
-    const { id } = await params
+    const id = request.url.substring(request.url.lastIndexOf('/') + 1)
     const token = request.cookies.get('payload-token')?.value
 
     if (!token) {
