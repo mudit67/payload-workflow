@@ -48,7 +48,7 @@ export default function AuthButton({ className = '' }: { className?: string }) {
       checkAuth()
     }
     setLoading(false)
-  }, [context?.user])
+  }, [context, context?.user])
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -128,7 +128,7 @@ export default function AuthButton({ className = '' }: { className?: string }) {
   // Show Logout button if user is authenticated
   return (
     <div className="flex items-center space-x-3">
-      <span className="text-sm text-gray-700">Welcome, {user.email}</span>
+      <span className="text-sm text-white">Welcome, {user.email}</span>
       <button
         onClick={handleLogout}
         disabled={loggingOut}
