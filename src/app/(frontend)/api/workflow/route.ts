@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import getUserRole from '@/lib/getUserRole'
 
 export async function POST(request: NextRequest) {
   try {
     const payload = await getPayload({ config })
     const body = await request.json()
-    // console.log('/api/workflow/')
 
-    // console.log(body)
+    const user = await getUserRole()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
+    }
+
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+    }
 
     // Validate required fields
     if (!body.name || !body.collection_name || !body.steps) {

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import Link from 'next/link'
+import { UserContext } from '@/lib/authContext'
 
 interface User {
-  id: string
+  id: number
   email: string
   role: string
 }
@@ -13,26 +14,13 @@ export default function Footer() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const ctx = useContext(UserContext)
+
   useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const response = await fetch('/api/users/me', {
-          credentials: 'include',
-        })
-
-        if (response.ok) {
-          const result = await response.json()
-          setUser(result.user)
-        }
-      } catch (error) {
-        console.error('Failed to fetch user:', error)
-      } finally {
-        setLoading(false)
-      }
+    if (ctx?.user) {
+      setUser(ctx?.user)
     }
-
-    checkUser()
-  }, [])
+  }, [ctx?.user])
 
   return (
     <footer className="bg-gray-800 text-white py-6 mt-auto">

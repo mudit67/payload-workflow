@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import getUserRole from '@/lib/getUserRole'
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -12,26 +13,14 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    // Get current user
-    let user
-    try {
-      const userResponse = await fetch(
-        `${process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/users/me`,
-        {
-          headers: {
-            Cookie: `payload-token=${token}`,
-          },
-        },
-      )
+    const user = await getUserRole()
 
-      if (!userResponse.ok) {
-        return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
-      }
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
+    }
 
-      const userData = await userResponse.json()
-      user = userData.user
-    } catch (error) {
-      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
     // Check permissions (admin/staff only)

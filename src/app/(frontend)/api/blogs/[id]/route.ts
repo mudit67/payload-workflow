@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { NextApiRequest } from 'next'
+import getUserRole from '@/lib/getUserRole'
 
 export async function GET(request: NextRequest) {
   const id = request.url.substring(request.url.lastIndexOf('/') + 1)
@@ -18,26 +19,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    // Get current user
-    let user
-    try {
-      const userResponse = await fetch(
-        `${process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/users/me`,
-        {
-          headers: {
-            Cookie: `payload-token=${token}`,
-          },
-        },
-      )
+    const user = await getUserRole()
 
-      if (!userResponse.ok) {
-        return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
-      }
-
-      const userData = await userResponse.json()
-      user = userData.user
-    } catch (error) {
-      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
     }
 
     // Get the post
@@ -52,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Role-based access control for users
-    if (user.role === 'user') {
+    if (user.role && user.role === 'user') {
       // For users, check if ALL workflow steps are approved
       const isPostFullyApproved = await checkIfPostFullyApproved(payload, id)
 
@@ -186,30 +171,13 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    // Get current user
-    let user
-    try {
-      const userResponse = await fetch(
-        `${process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/users/me`,
-        {
-          headers: {
-            Cookie: `payload-token=${token}`,
-          },
-        },
-      )
+    const user = await getUserRole()
 
-      if (!userResponse.ok) {
-        return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
-      }
-
-      const userData = await userResponse.json()
-      user = userData.user
-    } catch (error) {
-      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
     }
 
-    // Only admin/staff can update workflow status
-    if (user.role !== 'admin' && user.role !== 'staff') {
+    if (user.role !== 'admin') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 

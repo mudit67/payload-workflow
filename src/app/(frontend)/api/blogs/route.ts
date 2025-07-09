@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { headers } from 'next/headers'
+import getUserRole from '@/lib/getUserRole'
 
 interface WorkflowStatus {
   id: string
@@ -25,55 +26,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const payload = await getPayload({ config })
-    const headersList = await headers()
-    const user = await payload
-      .auth({ headers: headersList, canSetHeaders: false })
-      .then((authRes) => {
-        if (!authRes.user) return null
-        const user: User = {
-          role: authRes.user.role || '',
-          email: authRes.user.email,
-          id: authRes.user.id,
-        }
-        return user
-      })
-      .catch(() => {
-        console.error('Authentication failed')
-
-        return null
-      })
-
-    console.log(user && user.role)
+    const user = await getUserRole()
 
     if (!user) {
       return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
     }
-
-    // // Get current user using Payload's REST API approach
-    // let user
-    // try {
-    //   const userResponse = await fetch(
-    //     `${process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/users/me`,
-    //     {
-    //       headers: {
-    //         Cookie: `payload-token=${token}`,
-    //       },
-    //     },
-    //   )
-
-    //   if (!userResponse.ok) {
-    //     return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
-    //   }
-
-    //   const userData = await userResponse.json()
-    //   user = userData.user
-    // } catch (error) {
-    //   return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
-    // }
-
     let posts = []
 
+    const payload = await getPayload({ config })
     if (user.role && user.role === 'user') {
       // For regular users, only show posts where all workflow steps are approved
       posts = await getPostsWithAllStepsApproved(payload)

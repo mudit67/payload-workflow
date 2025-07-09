@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { WorkflowEngine } from '@/lib/workflowEngine'
 import { registerWorkflowHook } from '@/lib/registerWorkflowHook'
+import getUserRole from '@/lib/getUserRole'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,26 +15,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    // Verify user permissions
-    let user
-    try {
-      const userResponse = await fetch(
-        `${process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/users/me`,
-        {
-          headers: {
-            Cookie: `payload-token=${token}`,
-          },
-        },
-      )
+    const user = await getUserRole()
 
-      if (!userResponse.ok) {
-        return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
-      }
-
-      const userData = await userResponse.json()
-      user = userData.user
-    } catch (error) {
-      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
     }
 
     if (user.role !== 'admin') {
