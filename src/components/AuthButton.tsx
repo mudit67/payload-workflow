@@ -32,8 +32,10 @@ export default function AuthButton({ className = '' }: { className?: string }) {
 
           if (response.ok) {
             const result = await response.json()
-            context?.login(result.user.id, result.user.email, result.user.role)
-            setUser(result.user)
+            if (result.user) {
+              context?.login(result.user.id, result.user.email, result.user.role)
+              setUser(result.user)
+            }
           } else {
             setUser(null)
           }
@@ -64,6 +66,7 @@ export default function AuthButton({ className = '' }: { className?: string }) {
       }
 
       setUser(null)
+      context?.logout()
       router.refresh()
       router.replace('/login')
     } catch (err) {

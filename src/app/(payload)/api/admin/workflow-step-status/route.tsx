@@ -19,10 +19,6 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
     }
 
-    if (user.role !== 'admin') {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-    }
-
     // Check permissions (admin/staff only)
     if (user.role !== 'admin' && user.role !== 'staff') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })

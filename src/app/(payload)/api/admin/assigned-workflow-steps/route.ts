@@ -17,11 +17,6 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
     }
-
-    if (user.role !== 'admin') {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-    }
-
     // Only allow admin/staff
     if (user.role !== 'admin' && user.role !== 'staff') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
@@ -83,7 +78,7 @@ export async function GET(request: NextRequest) {
         }
       }
     }
-    // console.log(assignedSteps)
+    console.log(assignedSteps)
 
     return NextResponse.json({
       assignedSteps: assignedSteps,

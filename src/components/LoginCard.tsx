@@ -39,9 +39,9 @@ export default function LoginCard() {
         throw new Error(result.message || 'Login failed')
       }
 
-      console.log(result.user)
-      ctx?.login(result.user.id, result.user.email, result.user.role)
-
+      if (result.user) {
+        ctx?.login(result.user.id, result.user.email, result.user.role)
+      }
       // Refresh and redirect
       router.refresh()
       // router.replace(redirectTo)
