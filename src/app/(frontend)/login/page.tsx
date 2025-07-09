@@ -4,7 +4,7 @@
 // import { useRouter, useSearchParams } from 'next/navigation'
 // import Link from 'next/link'
 import LoginCard from '@/components/LoginCard'
-import { Suspense } from 'react'
+// import { Suspense } from 'react'
 
 export default function LoginPage() {
   // const router = useRouter()
@@ -57,8 +57,8 @@ export default function LoginPage() {
   // }
 
   return (
-    <Suspense>
-      <LoginCard />
-    </Suspense>
+    // <Suspense>
+    <LoginCard />
+    // </Suspense>
   )
 }

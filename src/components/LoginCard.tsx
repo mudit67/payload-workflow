@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { UserContext } from '@/lib/authContext'
 
 export default function LoginCard() {
   const router = useRouter()
@@ -15,10 +16,11 @@ export default function LoginCard() {
   const [error, setError] = useState('')
 
   const redirectTo = searchParams.get('redirect') || '/'
-
+  const ctx = useContext(UserContext)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+
     setError('')
 
     try {
@@ -37,9 +39,14 @@ export default function LoginCard() {
         throw new Error(result.message || 'Login failed')
       }
 
+      console.log(result.user)
+      ctx?.login(result.user.id, result.user.email, result.user.role)
+
       // Refresh and redirect
       router.refresh()
-      router.replace(redirectTo)
+      // router.replace(redirectTo)
+      router.push(redirectTo)
+      // router.refresh()
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.')
     } finally {

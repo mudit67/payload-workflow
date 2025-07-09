@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { headers } from 'next/headers'
 
 interface WorkflowStatus {
   id: string
@@ -10,40 +11,70 @@ interface WorkflowStatus {
   step_status: string
 }
 
+interface User {
+  id: number
+  email: string
+  role: string
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const payload = await getPayload({ config })
     const token = request.cookies.get('payload-token')?.value
 
     if (!token) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    // Get current user using Payload's REST API approach
-    let user
-    try {
-      const userResponse = await fetch(
-        `${process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/users/me`,
-        {
-          headers: {
-            Cookie: `payload-token=${token}`,
-          },
-        },
-      )
+    const payload = await getPayload({ config })
+    const headersList = await headers()
+    const user = await payload
+      .auth({ headers: headersList, canSetHeaders: false })
+      .then((authRes) => {
+        if (!authRes.user) return null
+        const user: User = {
+          role: authRes.user.role || '',
+          email: authRes.user.email,
+          id: authRes.user.id,
+        }
+        return user
+      })
+      .catch(() => {
+        console.error('Authentication failed')
 
-      if (!userResponse.ok) {
-        return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
-      }
+        return null
+      })
 
-      const userData = await userResponse.json()
-      user = userData.user
-    } catch (error) {
-      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+    console.log(user && user.role)
+
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
     }
+
+    // // Get current user using Payload's REST API approach
+    // let user
+    // try {
+    //   const userResponse = await fetch(
+    //     `${process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/users/me`,
+    //     {
+    //       headers: {
+    //         Cookie: `payload-token=${token}`,
+    //       },
+    //     },
+    //   )
+
+    //   if (!userResponse.ok) {
+    //     return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
+    //   }
+
+    //   const userData = await userResponse.json()
+    //   user = userData.user
+    // } catch (error) {
+    //   return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+    // }
 
     let posts = []
 
-    if (user && user.role === 'user') {
+    if (user.role && user.role === 'user') {
       // For regular users, only show posts where all workflow steps are approved
       posts = await getPostsWithAllStepsApproved(payload)
     } else if (user && (user.role === 'admin' || user.role === 'staff')) {

@@ -15,7 +15,7 @@ interface Post {
 }
 
 interface User {
-  id: string
+  id: number
   email: string
   role: string
 }

@@ -14,7 +14,6 @@ import { Workflows } from './collections/Workflow'
 import { WorkflowStatus } from './collections/WorkflowStatus'
 import { Products } from './collections/Product'
 import { WorkflowLogs } from './collections/WorkflowLogs'
-import { contracts } from './collections/Contracts'
 // import { AssignedWorkflowSteps } from './components/admin/workflowStatus'
 
 const filename = fileURLToPath(import.meta.url)

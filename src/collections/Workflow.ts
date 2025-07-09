@@ -10,9 +10,9 @@ import type {
 } from 'payload'
 
 export const bfReadHook: CollectionBeforeLoginHook = async ({ req }) => {
-  console.log('Before Read Hook Called')
+  // console.log('Before Read Hook Called')
   const registeredWorkflows = await req.payload.find({ collection: 'workflows' })
-  console.log(registerWorkflowHook)
+  // console.log(registerWorkflowHook)
   const workflowEngine = new WorkflowEngine(req.payload)
   registeredWorkflows.docs.map(async (wf) => {
     if (wf.collection_name) {
@@ -29,9 +29,9 @@ export const bfReadHook: CollectionBeforeLoginHook = async ({ req }) => {
 }
 
 export const aftMe: CollectionAfterMeHook = async ({ req }) => {
-  console.log('After Me Hook Called')
+  // console.log('After Me Hook Called')
   const registeredWorkflows = await req.payload.find({ collection: 'workflows' })
-  console.log(registerWorkflowHook)
+  // console.log(registerWorkflowHook)
   // const workflowEngine = new WorkflowEngine(req.payload)
   registeredWorkflows.docs.map(async (wf) => {
     if (wf.collection_name) {

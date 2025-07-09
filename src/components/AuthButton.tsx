@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-
+import { UserContext } from '@/lib/authContext'
 interface User {
-  id: string
+  id: number
   email: string
   role?: string
 }
@@ -16,30 +16,39 @@ export default function AuthButton({ className = '' }: { className?: string }) {
   const [loading, setLoading] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
 
+  const context = useContext(UserContext)
+
   // Check authentication status on component mount
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL || ''}/api/users/me`, {
-          credentials: 'include',
-        })
+    setLoading(true)
+    if (context?.user) {
+      setUser(context?.user)
+    } else {
+      const checkAuth = async () => {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL || ''}/api/users/me`, {
+            credentials: 'include',
+          })
 
-        if (response.ok) {
-          const result = await response.json()
-          setUser(result.user)
-        } else {
+          if (response.ok) {
+            const result = await response.json()
+            context?.login(result.user.id, result.user.email, result.user.role)
+            setUser(result.user)
+          } else {
+            setUser(null)
+          }
+        } catch (error) {
+          console.error('Auth check failed:', error)
           setUser(null)
+        } finally {
+          setLoading(false)
         }
-      } catch (error) {
-        console.error('Auth check failed:', error)
-        setUser(null)
-      } finally {
-        setLoading(false)
       }
-    }
 
-    checkAuth()
-  }, [])
+      checkAuth()
+    }
+    setLoading(false)
+  }, [context?.user])
 
   const handleLogout = async () => {
     setLoggingOut(true)

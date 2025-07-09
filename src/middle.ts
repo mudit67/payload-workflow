@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-
+import { cookies, headers } from 'next/headers'
+import { decodeJwt, jwtVerify } from 'jose'
+import { getPayload } from 'payload'
+import payloadConfig from '@payload-config'
+// import payloadConfig = require('@payload-config');
 // Define protected routes that require authentication
 const protectedRoutes = ['/workflow', '/admin', '/post']
 
@@ -14,7 +17,13 @@ const staffOnlyRoutes = ['/admin']
 const publicRoutes = ['/login', '/signup', '/', '/api/auth', '/api/users/me']
 
 async function getUserRole(token: string): Promise<string | null> {
+  console.log('GetUserRole')
   try {
+    // const payload = await getPayload({ config: payloadConfig })
+    // const headersList = await headers()
+    // const res = await payload.auth({ headers: headersList, canSetHeaders: false })
+    // console.log(res)
+
     const response = await fetch(
       `${process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'}/api/users/me`,
       {
@@ -36,6 +45,8 @@ async function getUserRole(token: string): Promise<string | null> {
 }
 
 export async function middleware(request: NextRequest) {
+  console.log('Middleware')
+
   const path = request.nextUrl.pathname
 
   // Check if current route is protected
@@ -109,4 +120,5 @@ export const config = {
      */
     '/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
+  // runtime: 'nodejs',
 }
