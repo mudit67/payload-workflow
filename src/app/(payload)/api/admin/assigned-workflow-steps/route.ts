@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
               step_status: status.step_status,
               workflow_name: workflow.name,
               doc_id: status.doc_id,
+              step_id: status.step_id,
               collection_name: workflow.collection_name,
               assigned_to: step.assigned_to,
             })

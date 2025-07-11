@@ -1,15 +1,23 @@
 import { authenticated, isAdmin, isStaff } from '@/authentication/isAuth'
-
+import { User } from '@/payload-types'
 import type { CollectionAfterChangeHook, CollectionConfig } from 'payload'
 
 const aftChangeLog: CollectionAfterChangeHook = async ({ req, doc, previousDoc }) => {
   // console.log(operation)
   if (previousDoc.step_status != doc.step_status) {
     const workflow = await req.payload.findByID({ collection: 'workflows', id: doc.workflow_id.id })
+    // console.log(req.user)
+    const engineUser: User = {
+      id: 0,
+      email: 'Workflow@Engine',
+      name: 'WorkflowEngine',
+      updatedAt: '01-01-2000',
+      createdAt: '01-01-2000',
+    }
     req.payload.create({
       collection: 'workflowLogs',
       data: {
-        initiator: workflow.steps?.filter((step) => step.id == doc.step_id)[0].assigned_to,
+        initiator: req.user ? req.user : 0,
         collectionAffected: workflow.collection_name,
         documentAffected: doc.doc_id,
         prevStatus: previousDoc.step_status,

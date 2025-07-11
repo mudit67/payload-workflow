@@ -108,15 +108,15 @@ export default function PostPage() {
 
     setUpdatingWorkflow(true)
     try {
-      const response = await fetch(`/api/blogs/${id}`, {
+      const response = await fetch(`/api/workflow/trigger/posts/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify({
-          stepId: stepId,
-          stepStatus: newStatus,
+          step_id: stepId,
+          step_status: newStatus,
         }),
       })
 
@@ -138,7 +138,7 @@ export default function PostPage() {
                     ...prev.workflow,
                     currentStepStatuses: prev.workflow.currentStepStatuses.map((status) =>
                       status.step_id === stepId
-                        ? { ...status, step_status: newStatus, statusId: result.workflowStatus.id }
+                        ? { ...status, step_status: newStatus, statusId: result.id }
                         : status,
                     ),
                   }

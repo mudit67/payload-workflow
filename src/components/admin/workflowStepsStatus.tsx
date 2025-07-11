@@ -10,9 +10,10 @@ interface WorkflowStep {
   type: 'approval' | 'review' | 'sign-off' | 'comment-only'
   step_status: 'approved' | 'rejected' | 'pending'
   workflow_name: string
-  doc_id: string
+  doc_id: number
   collection_name: string
   assigned_to: any
+  step_id: string
 }
 
 export default function AssignedWorkflowSteps() {
@@ -64,62 +65,25 @@ export default function AssignedWorkflowSteps() {
   // Count approved steps for display
   const approvedCount = assignedSteps.filter((step) => step.step_status === 'approved').length
 
-  const handleStepAction = async (stepId: string, action: 'approved' | 'rejected') => {
-    setUpdatingSteps((prev) => new Set(prev).add(stepId))
-
-    try {
-      const response = await fetch('/api/admin/workflow-step-status', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          stepId,
-          step_status: action,
-        }),
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-
-        setAssignedSteps((prev) =>
-          prev.map((step) => (step.id === stepId ? { ...step, step_status: action } : step)),
-        )
-
-        const stepName = assignedSteps.find((step) => step.id === stepId)?.step_name
-        // You could use Payload's toast system here instead of alert
-        console.log(`✅ Step "${stepName}" has been ${action}`)
-      } else {
-        const errorData = await response.json()
-        console.error(`❌ Failed to update step status: ${errorData.error || 'Unknown error'}`)
-      }
-    } catch (error) {
-      console.error('Error updating step:', error)
-    } finally {
-      setUpdatingSteps((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(stepId)
-        return newSet
-      })
-    }
-  }
-
   const handleStatusChange = async (
+    statusId: string,
     stepId: string,
     newStatus: 'approved' | 'rejected' | 'pending',
+    collection_name: string,
+    doc_id: number,
   ) => {
     setUpdatingSteps((prev) => new Set(prev).add(stepId))
+    // console.log(stepId)
 
     try {
-      const response = await fetch(`/api/admin/workflow-step-status`, {
+      const response = await fetch(`/api/workflow/trigger/${collection_name}/${doc_id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify({
-          stepId,
+          step_id: stepId,
           step_status: newStatus,
         }),
       })
@@ -128,16 +92,14 @@ export default function AssignedWorkflowSteps() {
         const result = await response.json()
 
         setAssignedSteps((prev) =>
-          prev.map((step) => (step.id === stepId ? { ...step, step_status: newStatus } : step)),
+          prev.map((step) => (step.id === statusId ? { ...step, step_status: newStatus } : step)),
         )
 
-        const stepName = assignedSteps.find((step) => step.id === stepId)?.step_name
+        const stepName = assignedSteps.find((step) => step.id === statusId)?.step_name
         console.log(`Step "${stepName}" status changed to ${newStatus}`)
       } else {
         const errorData = await response.json()
-        console.error(
-          `❌ Failed to update step status: ${errorData.errors?.[0]?.message || 'Unknown error'}`,
-        )
+        console.error(`❌ Failed to update step status: `, errorData)
       }
     } catch (error) {
       console.error('Error updating step:', error)
@@ -292,7 +254,10 @@ export default function AssignedWorkflowSteps() {
                       onChange={(e) =>
                         handleStatusChange(
                           step.id,
+                          step.step_id,
                           e.target.value as 'approved' | 'rejected' | 'pending',
+                          step.collection_name,
+                          step.doc_id,
                         )
                       }
                       disabled={isUpdating}
@@ -306,14 +271,30 @@ export default function AssignedWorkflowSteps() {
                     {step.step_status === 'pending' && (
                       <div className="workflow-steps__quick-actions">
                         <button
-                          onClick={() => handleStepAction(step.id, 'approved')}
+                          onClick={() =>
+                            handleStatusChange(
+                              step.id,
+                              step.step_id,
+                              'approved',
+                              step.collection_name,
+                              step.doc_id,
+                            )
+                          }
                           disabled={isUpdating}
                           className="btn btn--style-success btn--size-small"
                         >
                           ✓ Approve
                         </button>
                         <button
-                          onClick={() => handleStepAction(step.id, 'rejected')}
+                          onClick={() =>
+                            handleStatusChange(
+                              step.id,
+                              step.step_id,
+                              'rejected',
+                              step.collection_name,
+                              step.doc_id,
+                            )
+                          }
                           disabled={isUpdating}
                           className="btn btn--style-error btn--size-small"
                         >

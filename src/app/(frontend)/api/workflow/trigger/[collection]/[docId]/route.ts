@@ -63,6 +63,8 @@ export async function PATCH(
   }
   const step = workflow.docs[0].steps?.find((step) => step.id == body.step_id)
   if (!step) {
+    console.error(body.step_id, workflow.docs)
+
     return NextResponse.json(
       {
         error: 'Step ID not found',
@@ -100,8 +102,9 @@ export async function PATCH(
 
   const update = await payload.update({
     collection: 'workflowStatus',
-    where: { step_id: { equals: step.id } },
+    where: { step_id: { equals: step.id }, doc_id: { equals: docId } },
     data: { step_status: body.step_status },
+    user: user.id,
   })
 
   return NextResponse.json({
