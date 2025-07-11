@@ -4,9 +4,10 @@ import config from '@payload-config'
 import { NextApiRequest } from 'next'
 import getUserRole from '@/lib/getUserRole'
 
-export async function GET(request: NextRequest) {
-  const id = request.url.substring(request.url.lastIndexOf('/') + 1)
-  console.log(id)
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // const id = request.url.substring(request.url.lastIndexOf('/') + 1)
+  const { id } = await params
+  // console.log(id)
   try {
     // const { id } = request.
     const payload = await getPayload({ config })
