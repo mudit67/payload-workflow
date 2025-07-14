@@ -380,11 +380,7 @@ export default function PostPage() {
               Last updated: {new Date(post.updatedAt).toLocaleDateString()}
             </div>
             <div className="flex space-x-3">
-              {user.role === 'user' ? (
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500">
-                  Add Comment
-                </button>
-              ) : (
+              {user.role !== 'user' && (
                 <Link
                   href={`/admin/collections/posts/${post.id}`}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500"

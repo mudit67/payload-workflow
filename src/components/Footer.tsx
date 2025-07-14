@@ -32,13 +32,6 @@ export default function Footer() {
     <footer className="bg-gray-800 text-white py-6 mt-auto">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
-          {/* Left side - Copyright */}
-          <div className="text-center md:text-left mb-4 md:mb-0">
-            <p className="text-gray-300 text-sm">
-              © {new Date().getFullYear()} Teal Blogs. All rights reserved.
-            </p>
-          </div>
-
           {/* Right side - Navigation */}
           <div className="flex items-center space-x-6">
             {/* Always visible links */}
@@ -90,23 +83,6 @@ export default function Footer() {
                 Workflows
               </Link>
             )}
-          </div>
-        </div>
-
-        {/* Optional: Additional footer content */}
-        <div className="mt-4 pt-4 border-t border-gray-700">
-          <div className="flex flex-col md:flex-row justify-between items-center text-xs text-gray-400">
-            <div className="mb-2 md:mb-0">
-              <span>Built with Payload CMS & Next.js</span>
-            </div>
-            <div className="flex space-x-4">
-              <Link href="/privacy" className="hover:text-gray-300 transition-colors">
-                Privacy Policy
-              </Link>
-              <Link href="/terms" className="hover:text-gray-300 transition-colors">
-                Terms of Service
-              </Link>
-            </div>
           </div>
         </div>
       </div>

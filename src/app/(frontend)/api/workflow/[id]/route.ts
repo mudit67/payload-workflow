@@ -20,10 +20,6 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (user.role !== 'admin') {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-    }
-
-    if (user.role !== 'admin') {
       return NextResponse.json({ error: 'Only admins can delete workflows' }, { status: 403 })
     }
 
@@ -40,18 +36,18 @@ export async function DELETE(request: NextRequest) {
     // Remove the hook from the target collection
     await removeWorkflowHook(payload, workflow.collection_name, id)
 
-    // Delete the workflow document
-    await payload.delete({
-      collection: 'workflows',
-      id,
-    })
-
     // Also clean up any workflow status records for this workflow
     await payload.delete({
       collection: 'workflowStatus',
       where: {
         workflow_id: { equals: id },
       },
+    })
+
+    // Delete the workflow document
+    await payload.delete({
+      collection: 'workflows',
+      id,
     })
 
     return NextResponse.json(

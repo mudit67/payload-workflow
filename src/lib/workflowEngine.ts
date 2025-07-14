@@ -191,7 +191,6 @@ export class WorkflowEngine {
   }
 
   private async evaluateStepConditions(step: any, documentData: any): Promise<boolean> {
-    // If no field conditions are set, the step applies
     if (!step.field_name || !step.operator || !step.desiredValue) {
       return false
     }
